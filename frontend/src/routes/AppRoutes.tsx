@@ -1,0 +1,32 @@
+import { Navigate, Route, Routes } from "react-router-dom";
+import { AppLayout } from "../components/AppLayout";
+import { ProtectedRoute } from "../components/ProtectedRoute";
+import { AdminPage } from "../pages/AdminPage";
+import { DashboardPage } from "../pages/DashboardPage";
+import { LoginPage, RegisterPage } from "../pages/LoginPage";
+import { MatchesPage } from "../pages/MatchesPage";
+import { MyPredictionsPage } from "../pages/MyPredictionsPage";
+import { RankingPage } from "../pages/RankingPage";
+import { RulesPage } from "../pages/RulesPage";
+
+export function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/cadastro" element={<RegisterPage />} />
+      <Route element={<ProtectedRoute />}>
+        <Route element={<AppLayout />}>
+          <Route index element={<DashboardPage />} />
+          <Route path="/jogos" element={<MatchesPage />} />
+          <Route path="/palpites" element={<MyPredictionsPage />} />
+          <Route path="/ranking" element={<RankingPage />} />
+          <Route path="/regras" element={<RulesPage />} />
+          <Route element={<ProtectedRoute adminOnly />}>
+            <Route path="/admin" element={<AdminPage />} />
+          </Route>
+        </Route>
+      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
