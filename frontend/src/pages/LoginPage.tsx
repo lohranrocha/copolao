@@ -1,8 +1,8 @@
 import { FormEvent, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { Trophy } from "lucide-react";
 import { useAuth } from "../api/auth";
 import { getApiError } from "../api/client";
+import copolaoLogo from "../assets/copolao-logo-transparent.png";
 
 export function LoginPage() {
   const { login, token } = useAuth();
@@ -117,9 +117,7 @@ function AuthShell({
     <main className="min-h-screen bg-ink px-4 py-8 text-white">
       <div className="mx-auto flex min-h-[calc(100vh-64px)] max-w-md flex-col justify-center">
         <div className="mb-8">
-          <div className="mb-5 grid h-14 w-14 place-items-center rounded-xl bg-limebet text-ink shadow-glow">
-            <Trophy size={28} />
-          </div>
+          <img className="mb-5 h-24 w-24 object-contain drop-shadow-[0_0_18px_rgba(33,247,102,0.28)]" src={copolaoLogo} alt="Copolão" />
           <h1 className="text-3xl font-bold">{title}</h1>
           <p className="mt-2 text-sm leading-6 text-steel">{subtitle}</p>
         </div>

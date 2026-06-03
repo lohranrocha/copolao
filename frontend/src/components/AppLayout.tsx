@@ -1,7 +1,8 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { BarChart3, CalendarDays, ClipboardList, Home, ListChecks, LogOut, Rows3, Shield, Trophy, UserRound, type LucideIcon } from "lucide-react";
+import { BarChart3, CalendarDays, ClipboardList, Home, ListChecks, LogOut, Rows3, Shield, UserRound, type LucideIcon } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "../api/auth";
+import copolaoLogo from "../assets/copolao-logo-transparent.png";
 
 const baseItems = [
   { to: "/", label: "Inicio", icon: Home },
@@ -22,8 +23,8 @@ export function AppLayout() {
       <header className="sticky top-0 z-30 border-b border-white/10 bg-ink/95 text-white shadow-soft backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <NavLink className="flex min-w-0 items-center gap-3 rounded-lg pr-2 transition hover:bg-white/[0.03]" to="/perfil">
-            <div className="grid h-10 w-10 place-items-center rounded-lg bg-limebet text-ink shadow-glow">
-              <Trophy size={22} />
+            <div className="grid h-12 w-12 shrink-0 place-items-center">
+              <img className="h-12 w-12 object-contain" src={copolaoLogo} alt="Copolão" />
             </div>
             <div className="min-w-0">
               <p className="text-sm font-bold uppercase leading-5 tracking-wide">Copolão</p>
