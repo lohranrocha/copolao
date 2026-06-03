@@ -16,3 +16,20 @@ export function formatShortDateBR(date: string) {
     month: "2-digit"
   }).format(new Date(date));
 }
+
+export function formatDateHeadingBR(date: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    weekday: "long",
+    day: "2-digit",
+    month: "long"
+  }).format(new Date(date));
+}
+
+export function formatTimeBR(date: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(date));
+}

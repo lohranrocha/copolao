@@ -29,7 +29,7 @@ export function DashboardPage() {
         title="Resumo"
         description="Acompanhe sua posicao, seus palpites e os proximos jogos."
         action={user?.role === "ADMIN" ? (
-          <Link className="hidden h-10 items-center rounded-lg bg-night px-4 text-sm font-semibold text-white md:flex" to="/admin">
+          <Link className="hidden h-10 items-center rounded-lg bg-obsidian px-4 text-sm font-bold text-gold md:flex" to="/admin">
             Admin
           </Link>
         ) : null}
@@ -42,7 +42,7 @@ export function DashboardPage() {
         <StatCard label="Palpites" value={sentPredictions} />
       </div>
 
-      <div className="mt-6 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="mt-6 rounded-lg border border-black/10 bg-white p-4 shadow-sm">
         <h2 className="text-lg font-bold">Proximos jogos abertos</h2>
         <div className="mt-4 space-y-3">
           {nextMatches.map((match) => (

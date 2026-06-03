@@ -8,6 +8,10 @@ export default {
         pitch: "#0F7B4B",
         night: "#111827",
         trophy: "#D7A129",
+        gold: "#D6A437",
+        obsidian: "#080808",
+        graphite: "#171717",
+        champagne: "#F4EFE2",
         coral: "#E45D45",
         skyline: "#E7F0F7"
       },
