@@ -6,7 +6,7 @@ export function RulesPage() {
       <PageHeader title="Regras" description="Resumo simples do funcionamento do bolao." />
       <div className="space-y-3 rounded-lg border border-white/10 bg-felt p-5 text-sm leading-6 text-white/80 shadow-sm">
         <p>Cada participante pode enviar um palpite por jogo.</p>
-        <p>O palpite pode ser alterado ate uma hora antes do inicio da partida.</p>
+        <p>O palpite pode ser alterado ate 30 minutos antes do inicio da partida.</p>
         <p>Placar exato vale 3 pontos. Resultado certo vale 1 ponto. Resultado errado vale 0 pontos.</p>
         <p>Os palpites dos outros participantes ficam escondidos ate o jogo comecar.</p>
         <p>O ranking mostra todos os participantes do bolao.</p>

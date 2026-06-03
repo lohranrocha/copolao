@@ -70,7 +70,7 @@ function teamNamePt(teamName: string) {
 }
 
 function lockAtUtc(matchDateUtc: string) {
-  return new Date(new Date(matchDateUtc).getTime() - 60 * 60 * 1000);
+  return new Date(new Date(matchDateUtc).getTime() - 30 * 60 * 1000);
 }
 
 const bonusLockAtUtc = new Date("2026-06-11T17:00:00.000Z");

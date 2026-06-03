@@ -84,7 +84,7 @@ Para compartilhar um banco online de verdade entre voces, use um Postgres hosped
 
 ## Regras principais
 
-- Palpites fecham 1 hora antes do inicio do jogo.
+- Palpites fecham 30 minutos antes do inicio do jogo.
 - Cada participante tem no maximo 1 palpite por jogo.
 - Placar exato vale 3 pontos.
 - Resultado correto vale 1 ponto.

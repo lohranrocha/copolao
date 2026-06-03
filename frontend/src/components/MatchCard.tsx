@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Minus, Plus } from "lucide-react";
 import clsx from "clsx";
 import type { Match } from "../types/domain";
 import { formatTimeBR } from "../utils/date";
@@ -33,6 +34,14 @@ export function MatchCard({
     }
   }
 
+  function changeHomeScore(value: number) {
+    setHome(clampScore(value));
+  }
+
+  function changeAwayScore(value: number) {
+    setAway(clampScore(value));
+  }
+
   return (
     <article className="overflow-hidden rounded-lg border border-white/10 bg-felt shadow-sm">
       <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-white/[0.03] px-4 py-3">
@@ -58,7 +67,7 @@ export function MatchCard({
           label={match.homeTeam}
           value={home}
           disabled={!canEdit}
-          onChange={setHome}
+          onChange={changeHomeScore}
         />
         <div className="flex items-center gap-3">
           <div className="h-px flex-1 bg-white/10" />
@@ -71,14 +80,17 @@ export function MatchCard({
           label={match.awayTeam}
           value={away}
           disabled={!canEdit}
-          onChange={setAway}
+          onChange={changeAwayScore}
         />
       </div>
 
       <div className="flex items-center justify-between gap-3 border-t border-white/10 bg-white/[0.03] px-4 py-3">
-        <p className="text-xs font-medium text-steel">
-          {match.myPrediction ? `${match.myPrediction.points} ponto(s) neste jogo` : "Sem palpite enviado"}
-        </p>
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-steel">
+            {match.myPrediction ? `${match.myPrediction.points} ponto(s) neste jogo` : "Sem palpite enviado"}
+          </p>
+          <p className="mt-0.5 text-[11px] font-semibold text-steel">Fecha às {formatTimeBR(match.lockAtUtc)}</p>
+        </div>
         <button
           type="button"
           disabled={!canEdit || saving}
@@ -107,9 +119,13 @@ function TeamScoreRow({
   disabled: boolean;
   onChange: (value: number) => void;
 }) {
+  function step(delta: number) {
+    onChange(value + delta);
+  }
+
   return (
-    <label className="grid grid-cols-[1fr_72px] items-center gap-3">
-      <span className="flex min-w-0 items-center gap-3">
+    <div className="grid grid-cols-[1fr_126px] items-center gap-3">
+      <div className="flex min-w-0 items-center gap-3">
         <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/10 bg-white text-2xl shadow-sm">
           {flag}
         </span>
@@ -117,16 +133,43 @@ function TeamScoreRow({
           <span className="block truncate text-sm font-bold text-white">{label}</span>
           <span className="text-xs font-semibold text-steel">{code}</span>
         </span>
-      </span>
-      <input
-        className="h-14 w-full rounded-lg border border-white/10 bg-ink text-center text-xl font-black text-white outline-none transition focus:border-limebet focus:ring-2 focus:ring-limebet/25 disabled:bg-white/5"
-        type="number"
-        min={0}
-        max={99}
-        value={value}
-        disabled={disabled}
-        onChange={(event) => onChange(Number(event.target.value))}
-      />
-    </label>
+      </div>
+      <div className="grid h-14 grid-cols-[36px_1fr_36px] overflow-hidden rounded-lg border border-white/10 bg-ink">
+        <button
+          aria-label={`Diminuir placar de ${label}`}
+          className="grid place-items-center border-r border-white/10 text-steel transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+          disabled={disabled || value <= 0}
+          type="button"
+          onClick={() => step(-1)}
+        >
+          <Minus size={16} />
+        </button>
+        <input
+          aria-label={`Placar de ${label}`}
+          className="min-w-0 bg-transparent text-center text-xl font-black text-white outline-none transition focus:bg-limebet/10 disabled:bg-white/5"
+          type="number"
+          inputMode="numeric"
+          min={0}
+          max={99}
+          value={value}
+          disabled={disabled}
+          onChange={(event) => onChange(Number(event.target.value))}
+        />
+        <button
+          aria-label={`Aumentar placar de ${label}`}
+          className="grid place-items-center border-l border-white/10 text-limebet transition hover:bg-limebet/10 disabled:cursor-not-allowed disabled:opacity-40"
+          disabled={disabled || value >= 99}
+          type="button"
+          onClick={() => step(1)}
+        >
+          <Plus size={16} />
+        </button>
+      </div>
+    </div>
   );
+}
+
+function clampScore(value: number) {
+  if (Number.isNaN(value)) return 0;
+  return Math.min(Math.max(value, 0), 99);
 }

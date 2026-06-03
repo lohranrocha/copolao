@@ -12,6 +12,22 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      localStorage.removeItem("bolao.token");
+      localStorage.removeItem("bolao.user");
+
+      if (!["/login", "/cadastro"].includes(window.location.pathname)) {
+        window.location.assign("/login");
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
 export function getApiError(error: unknown) {
   if (axios.isAxiosError(error)) {
     return error.response?.data?.message ?? "Nao foi possivel concluir a acao.";
