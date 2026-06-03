@@ -29,7 +29,7 @@ export function DashboardPage() {
         title="Resumo"
         description="Acompanhe sua posicao, seus palpites e os proximos jogos."
         action={user?.role === "ADMIN" ? (
-          <Link className="hidden h-10 items-center rounded-lg bg-obsidian px-4 text-sm font-bold text-gold md:flex" to="/admin">
+          <Link className="hidden h-10 items-center rounded-lg bg-limebet px-4 text-sm font-black text-ink md:flex" to="/admin">
             Admin
           </Link>
         ) : null}
@@ -42,18 +42,18 @@ export function DashboardPage() {
         <StatCard label="Palpites" value={sentPredictions} />
       </div>
 
-      <div className="mt-6 rounded-lg border border-black/10 bg-white p-4 shadow-sm">
+      <div className="mt-6 rounded-lg border border-white/10 bg-felt p-4 text-white shadow-sm">
         <h2 className="text-lg font-bold">Proximos jogos abertos</h2>
         <div className="mt-4 space-y-3">
           {nextMatches.map((match) => (
-            <Link key={match.id} className="block rounded-lg bg-slate-50 p-3" to="/jogos">
-              <p className="text-xs font-medium uppercase text-slate-500">Grupo {match.groupCode} · {formatDateTimeBR(match.matchDateUtc)}</p>
+            <Link key={match.id} className="block rounded-lg border border-white/10 bg-ink p-3" to="/jogos">
+              <p className="text-xs font-medium uppercase text-steel">Grupo {match.groupCode} · {formatDateTimeBR(match.matchDateUtc)}</p>
               <p className="mt-1 font-semibold">
                 {match.homeTeam} x {match.awayTeam}
               </p>
             </Link>
           ))}
-          {nextMatches.length === 0 ? <p className="text-sm text-slate-500">Nenhum jogo aberto no momento.</p> : null}
+          {nextMatches.length === 0 ? <p className="text-sm text-steel">Nenhum jogo aberto no momento.</p> : null}
         </div>
       </div>
     </section>

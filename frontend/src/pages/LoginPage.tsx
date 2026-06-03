@@ -36,12 +36,12 @@ export function LoginPage() {
         <Field label="E-mail" type="email" value={email} onChange={setEmail} />
         <Field label="Senha" type="password" value={password} onChange={setPassword} />
         {error ? <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p> : null}
-        <button className="h-12 w-full rounded-lg bg-obsidian font-bold text-gold" disabled={loading}>
+        <button className="h-12 w-full rounded-lg bg-limebet font-black text-ink shadow-glow" disabled={loading}>
           {loading ? "Entrando..." : "Entrar"}
         </button>
-        <p className="text-center text-sm text-slate-600">
+        <p className="text-center text-sm text-steel">
           Nao tem conta?{" "}
-          <Link className="font-semibold text-obsidian" to="/cadastro">
+          <Link className="font-semibold text-limebet" to="/cadastro">
             Cadastrar
           </Link>
         </p>
@@ -90,12 +90,12 @@ export function RegisterPage() {
         <Field label="Senha" type="password" value={form.password} onChange={(password) => setForm((old) => ({ ...old, password }))} />
         <Field label="Codigo de convite" value={form.inviteCode} onChange={(inviteCode) => setForm((old) => ({ ...old, inviteCode }))} />
         {error ? <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p> : null}
-        <button className="h-12 w-full rounded-lg bg-obsidian font-bold text-gold" disabled={loading}>
+        <button className="h-12 w-full rounded-lg bg-limebet font-black text-ink shadow-glow" disabled={loading}>
           {loading ? "Criando..." : "Criar conta"}
         </button>
-        <p className="text-center text-sm text-slate-600">
+        <p className="text-center text-sm text-steel">
           Ja tem conta?{" "}
-          <Link className="font-semibold text-obsidian" to="/login">
+          <Link className="font-semibold text-limebet" to="/login">
             Entrar
           </Link>
         </p>
@@ -114,16 +114,16 @@ function AuthShell({
   children: React.ReactNode;
 }) {
   return (
-    <main className="min-h-screen bg-champagne px-4 py-8 text-night">
+    <main className="min-h-screen bg-ink px-4 py-8 text-white">
       <div className="mx-auto flex min-h-[calc(100vh-64px)] max-w-md flex-col justify-center">
         <div className="mb-8">
-          <div className="mb-5 grid h-14 w-14 place-items-center rounded-xl bg-obsidian text-gold shadow-soft">
+          <div className="mb-5 grid h-14 w-14 place-items-center rounded-xl bg-limebet text-ink shadow-glow">
             <Trophy size={28} />
           </div>
           <h1 className="text-3xl font-bold">{title}</h1>
-          <p className="mt-2 text-sm leading-6 text-slate-600">{subtitle}</p>
+          <p className="mt-2 text-sm leading-6 text-steel">{subtitle}</p>
         </div>
-        <div className="rounded-lg border border-black/10 bg-white p-5 shadow-sm">{children}</div>
+        <div className="rounded-lg border border-white/10 bg-felt p-5 shadow-sm">{children}</div>
       </div>
     </main>
   );
@@ -142,9 +142,9 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="text-sm font-medium text-slate-700">{label}</span>
+      <span className="text-sm font-medium text-white/80">{label}</span>
       <input
-        className="mt-1 h-12 w-full rounded-lg border border-slate-200 px-3 outline-none focus:border-gold focus:ring-2 focus:ring-gold/20"
+        className="mt-1 h-12 w-full rounded-lg border border-white/10 bg-ink px-3 text-white outline-none focus:border-limebet focus:ring-2 focus:ring-limebet/25"
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}

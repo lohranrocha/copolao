@@ -48,27 +48,27 @@ export function AdminPage() {
       <PageHeader title="Admin" description="Gerencie resultados e acompanhe participantes. Jogos nao sao editaveis pela aplicacao." />
 
       <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
-        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-lg border border-white/10 bg-felt p-4 text-white shadow-sm">
           <h2 className="text-lg font-bold">Participantes</h2>
           <div className="mt-4 space-y-2">
             {users.map((user) => (
-              <div key={user.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm">
+              <div key={user.id} className="flex items-center justify-between rounded-lg bg-ink px-3 py-2 text-sm">
                 <div className="min-w-0">
                   <p className="truncate font-semibold">{user.nickname || user.name}</p>
-                  <p className="truncate text-xs text-slate-500">{user.email}</p>
+                  <p className="truncate text-xs text-steel">{user.email}</p>
                 </div>
-                <span className="rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-600">{user.role}</span>
+                <span className="rounded-full bg-limebet/10 px-2 py-1 text-xs font-semibold text-limebet">{user.role}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <form className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm" onSubmit={submitResult}>
+        <form className="rounded-lg border border-white/10 bg-felt p-4 text-white shadow-sm" onSubmit={submitResult}>
           <h2 className="text-lg font-bold">Lancar resultado</h2>
           <label className="mt-4 block">
-            <span className="text-sm font-medium text-slate-700">Jogo</span>
+            <span className="text-sm font-medium text-white/80">Jogo</span>
             <select
-              className="mt-1 h-12 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-pitch"
+              className="mt-1 h-12 w-full rounded-lg border border-white/10 bg-ink px-3 text-sm text-white outline-none focus:border-limebet"
               value={selectedMatchId}
               onChange={(event) => setSelectedMatchId(event.target.value)}
             >
@@ -81,20 +81,20 @@ export function AdminPage() {
           </label>
 
           {selectedMatch ? (
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-steel">
               Grupo {selectedMatch.groupCode} · {formatDateTimeBR(selectedMatch.matchDateUtc)}
             </p>
           ) : null}
 
           <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-end gap-3">
             <Score label={selectedMatch?.homeTeam ?? "Casa"} value={homeScore} onChange={setHomeScore} />
-            <span className="pb-3 font-bold text-slate-400">x</span>
+            <span className="pb-3 font-bold text-steel">x</span>
             <Score label={selectedMatch?.awayTeam ?? "Visitante"} value={awayScore} onChange={setAwayScore} />
           </div>
 
-          {message ? <p className="mt-4 rounded-lg bg-skyline px-3 py-2 text-sm text-night">{message}</p> : null}
+          {message ? <p className="mt-4 rounded-lg border border-limebet/25 bg-limebet/10 px-3 py-2 text-sm text-limebet">{message}</p> : null}
 
-          <button className="mt-4 h-11 w-full rounded-lg bg-night font-semibold text-white" type="submit">
+          <button className="mt-4 h-11 w-full rounded-lg bg-limebet font-black text-ink" type="submit">
             Salvar resultado
           </button>
         </form>
@@ -114,9 +114,9 @@ function Score({
 }) {
   return (
     <label className="min-w-0">
-      <span className="block truncate text-xs font-medium text-slate-600">{label}</span>
+      <span className="block truncate text-xs font-medium text-steel">{label}</span>
       <input
-        className="mt-1 h-12 w-full rounded-lg border border-slate-200 text-center text-lg font-bold outline-none focus:border-pitch"
+        className="mt-1 h-12 w-full rounded-lg border border-white/10 bg-ink text-center text-lg font-bold text-white outline-none focus:border-limebet"
         min={0}
         max={99}
         type="number"

@@ -16,17 +16,17 @@ export function RankingPage() {
       <PageHeader title="Ranking" description="Ordenado por pontos, placares exatos, resultados certos e palpites enviados." />
       <div className="space-y-3">
         {ranking.map((entry) => (
-          <article key={entry.user.id} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="grid h-10 w-10 place-items-center rounded-lg bg-slate-100 font-bold">
-              {entry.position <= 3 ? <Medal className="text-trophy" size={20} /> : entry.position}
+          <article key={entry.user.id} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-lg border border-white/10 bg-felt p-4 text-white shadow-sm">
+            <div className="grid h-10 w-10 place-items-center rounded-lg bg-limebet font-black text-ink">
+              {entry.position <= 3 ? <Medal size={20} /> : entry.position}
             </div>
             <div className="min-w-0">
               <p className="truncate font-bold">{entry.user.nickname || entry.user.name}</p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-steel">
                 {entry.exactScores} exatos · {entry.correctResults} resultados · {entry.missedPredictions} ausentes
               </p>
             </div>
-            <strong className="text-xl">{entry.totalPoints}</strong>
+            <strong className="text-xl text-limebet">{entry.totalPoints}</strong>
           </article>
         ))}
       </div>

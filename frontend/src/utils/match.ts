@@ -13,9 +13,9 @@ export function matchStateLabel(state: ComputedMatchState) {
 
 export function matchStateTone(state: ComputedMatchState) {
   const tones: Record<ComputedMatchState, string> = {
-    OPEN: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    LOCKED: "bg-amber-50 text-amber-700 border-amber-200",
-    FINISHED: "bg-skyline text-night border-slate-200",
+    OPEN: "bg-limebet/15 text-limebet border-limebet/35",
+    LOCKED: "bg-amber-400/15 text-amber-300 border-amber-300/35",
+    FINISHED: "bg-white/10 text-white/75 border-white/15",
     CANCELLED: "bg-rose-50 text-rose-700 border-rose-200"
   };
 

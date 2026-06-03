@@ -59,36 +59,38 @@ export function MatchesPage() {
 
   return (
     <section>
-      <div className="mb-5 overflow-hidden rounded-lg bg-obsidian text-white shadow-soft">
-        <div className="border-b border-white/10 px-4 py-5 md:px-6">
+      <div className="mb-5 overflow-hidden rounded-lg border border-limebet/20 bg-felt text-white shadow-glow">
+        <div className="relative border-b border-white/10 px-4 py-5 md:px-6">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_85%_20%,rgba(33,247,102,0.22),transparent_34%),linear-gradient(135deg,rgba(33,247,102,0.12),transparent_45%)]" />
           <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-            <div>
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-gold/35 bg-gold/10 px-3 py-1 text-xs font-bold uppercase text-gold">
+            <div className="relative">
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-limebet/35 bg-limebet/10 px-3 py-1 text-xs font-bold uppercase text-limebet">
                 <Trophy size={14} />
-                Copa 2026
+                Bolão privado
               </div>
               <h1 className="text-3xl font-black uppercase tracking-wide md:text-4xl">Jogos do Copolão</h1>
-              <p className="mt-2 max-w-xl text-sm leading-6 text-white/65">
+              <p className="mt-2 max-w-xl text-sm leading-6 text-steel">
                 Palpite rápido no celular, fechamento uma hora antes do jogo e tudo no horário do Brasil.
               </p>
             </div>
             <Countdown targetDate={firstMatchDate} />
           </div>
         </div>
-        <div className="grid grid-cols-3">
-          <div className="h-1 bg-emerald-500" />
-          <div className="h-1 bg-gold" />
-          <div className="h-1 bg-sky-600" />
+        <div className="grid grid-cols-4">
+          <div className="h-1 bg-limebet" />
+          <div className="h-1 bg-mintbet" />
+          <div className="h-1 bg-cyan-400" />
+          <div className="h-1 bg-limebet" />
         </div>
       </div>
 
-      <div className="mb-4 grid grid-cols-4 rounded-lg bg-black/5 p-1">
+      <div className="mb-4 grid grid-cols-4 rounded-lg border border-white/10 bg-felt p-1">
         {tabs.map((tab) => (
           <button
             key={tab.mode}
             className={clsx(
               "h-11 rounded-md text-xs font-bold transition md:text-sm",
-              viewMode === tab.mode ? "bg-white text-obsidian shadow-sm" : "text-slate-600 hover:text-obsidian"
+              viewMode === tab.mode ? "bg-limebet text-ink shadow-glow" : "text-steel hover:bg-white/10 hover:text-white"
             )}
             type="button"
             onClick={() => setViewMode(tab.mode)}
@@ -105,7 +107,7 @@ export function MatchesPage() {
               key={item}
               className={clsx(
                 "h-10 shrink-0 rounded-lg border px-4 text-sm font-bold transition",
-                group === item ? "border-obsidian bg-obsidian text-gold" : "border-black/10 bg-white text-slate-600"
+                group === item ? "border-limebet bg-limebet text-ink" : "border-white/10 bg-felt text-steel"
               )}
               type="button"
               onClick={() => setGroup(item)}
@@ -116,7 +118,7 @@ export function MatchesPage() {
         </div>
       ) : null}
 
-      {message ? <p className="mb-4 rounded-lg border border-gold/30 bg-gold/10 px-3 py-2 text-sm font-semibold text-night">{message}</p> : null}
+      {message ? <p className="mb-4 rounded-lg border border-limebet/30 bg-limebet/10 px-3 py-2 text-sm font-semibold text-limebet">{message}</p> : null}
 
       {viewMode === "KNOCKOUT" ? <ComingSoonPanel kind="knockout" /> : null}
       {viewMode === "BONUS" ? <ComingSoonPanel kind="bonus" /> : null}
@@ -125,7 +127,7 @@ export function MatchesPage() {
         <div className="space-y-6">
           {sections.map((section) => (
             <div key={section.title}>
-              <h2 className="mb-3 text-sm font-black uppercase tracking-wide text-slate-600">{section.title}</h2>
+              <h2 className="mb-3 text-sm font-black uppercase tracking-wide text-white/75">{section.title}</h2>
               <div className="grid gap-4 lg:grid-cols-2">
                 {section.matches.map((match) => (
                   <MatchCard key={match.id} match={match} onSavePrediction={savePrediction} />
@@ -185,8 +187,8 @@ function Countdown({ targetDate }: { targetDate?: string }) {
   const minutes = Math.floor((remaining % 3_600_000) / 60_000);
 
   return (
-    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-      <p className="mb-2 text-xs font-bold uppercase text-white/55">Faltam para a Copa</p>
+    <div className="relative rounded-lg border border-limebet/25 bg-black/35 p-3">
+      <p className="mb-2 text-xs font-bold uppercase text-steel">Faltam para a Copa</p>
       <div className="grid grid-cols-3 gap-2">
         <CountdownUnit label="dias" value={days} />
         <CountdownUnit label="horas" value={hours} />
@@ -198,9 +200,9 @@ function Countdown({ targetDate }: { targetDate?: string }) {
 
 function CountdownUnit({ label, value }: { label: string; value: number }) {
   return (
-    <div className="min-w-16 rounded-lg border border-gold/25 bg-black/35 px-3 py-2 text-center">
-      <p className="text-2xl font-black leading-none text-gold">{String(value).padStart(2, "0")}</p>
-      <p className="mt-1 text-[10px] font-bold uppercase text-white/50">{label}</p>
+    <div className="min-w-16 rounded-lg border border-limebet/25 bg-ink px-3 py-2 text-center">
+      <p className="text-2xl font-black leading-none text-limebet">{String(value).padStart(2, "0")}</p>
+      <p className="mt-1 text-[10px] font-bold uppercase text-steel">{label}</p>
     </div>
   );
 }
@@ -210,17 +212,17 @@ function ComingSoonPanel({ kind }: { kind: "knockout" | "bonus" }) {
   const Icon = isBonus ? Gift : ShieldCheck;
 
   return (
-    <div className="rounded-lg border border-black/10 bg-white p-5 shadow-sm">
-      <div className="mb-4 grid h-12 w-12 place-items-center rounded-lg bg-obsidian text-gold">
+    <div className="rounded-lg border border-white/10 bg-felt p-5 text-white shadow-sm">
+      <div className="mb-4 grid h-12 w-12 place-items-center rounded-lg bg-limebet text-ink">
         <Icon size={24} />
       </div>
       <h2 className="text-xl font-black">{isBonus ? "Palpites bônus" : "Mata-mata"}</h2>
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+      <p className="mt-2 max-w-2xl text-sm leading-6 text-steel">
         {isBonus
           ? "Próxima evolução: campeão, artilheiro, melhor ataque, melhor defesa e perguntas especiais do bolão."
           : "Os jogos eliminatórios entram quando os confrontos forem definidos. A tela já está reservada para essa fase."}
       </p>
-      <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-gold/10 px-3 py-1 text-xs font-bold uppercase text-obsidian">
+      <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-limebet/10 px-3 py-1 text-xs font-bold uppercase text-limebet">
         <CalendarClock size={14} />
         Em breve
       </div>
