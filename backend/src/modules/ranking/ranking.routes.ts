@@ -20,7 +20,8 @@ async function buildRanking() {
         include: {
           match: true
         }
-      }
+      },
+      bonusPredictions: true
     }
   });
 
@@ -32,13 +33,18 @@ async function buildRanking() {
       (prediction) => prediction.match.lockAtUtc <= now && prediction.match.status !== "CANCELLED"
     ).length;
 
+    const matchPoints = finishedPredictions.reduce((sum, prediction) => sum + prediction.points, 0);
+    const bonusPoints = user.bonusPredictions.reduce((sum, prediction) => sum + prediction.points, 0);
+
     return {
       user: {
         id: user.id,
         name: user.name,
         nickname: user.nickname
       },
-      totalPoints: finishedPredictions.reduce((sum, prediction) => sum + prediction.points, 0),
+      totalPoints: matchPoints + bonusPoints,
+      matchPoints,
+      bonusPoints,
       exactScores: finishedPredictions.filter((prediction) => prediction.isExactScore).length,
       correctResults: finishedPredictions.filter((prediction) => prediction.isCorrectResult).length,
       missedPredictions: Math.max(lockedMatchesCount - lockedPredictionsCount, 0)

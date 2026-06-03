@@ -6,6 +6,7 @@ export type User = {
   nickname: string | null;
   email: string;
   role: UserRole;
+  acceptedInviteCode?: string | null;
 };
 
 export type ComputedMatchState = "OPEN" | "LOCKED" | "FINISHED" | "CANCELLED";
@@ -48,7 +49,86 @@ export type RankingEntry = {
     nickname: string | null;
   };
   totalPoints: number;
+  matchPoints: number;
+  bonusPoints: number;
   exactScores: number;
   correctResults: number;
   missedPredictions: number;
+};
+
+export type InviteCode = {
+  id: string;
+  code: string;
+  label: string;
+  isActive: boolean;
+  maxUses: number | null;
+  usedCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type BonusQuestionState = "OPEN" | "LOCKED" | "SETTLED";
+
+export type BonusPrediction = {
+  id: string;
+  answer: string;
+  points: number;
+  isCorrect: boolean;
+  updatedAt: string;
+};
+
+export type BonusQuestion = {
+  id: string;
+  title: string;
+  description: string;
+  points: number;
+  lockAtUtc: string;
+  correctAnswer: string | null;
+  computedState: BonusQuestionState;
+  myPrediction: BonusPrediction | null;
+};
+
+export type AdminBonusQuestion = Omit<BonusQuestion, "myPrediction"> & {
+  isActive: boolean;
+  predictions: Array<BonusPrediction & {
+    user: {
+      id: string;
+      name: string;
+      nickname: string | null;
+    };
+  }>;
+};
+
+export type PredictionBoardParticipant = {
+  id: string;
+  name: string;
+  nickname: string | null;
+};
+
+export type PredictionBoardPrediction = {
+  userId: string;
+  user: PredictionBoardParticipant;
+  hidden: boolean;
+  homeScorePrediction?: number;
+  awayScorePrediction?: number;
+  points?: number;
+  isExactScore?: boolean;
+  isCorrectResult?: boolean;
+};
+
+export type PredictionBoardMatch = {
+  id: string;
+  matchNumber: number;
+  homeTeam: string;
+  awayTeam: string;
+  groupCode: string | null;
+  stage: string;
+  matchDateUtc: string;
+  lockAtUtc: string;
+  homeScore: number | null;
+  awayScore: number | null;
+  computedState: ComputedMatchState;
+  isPublic: boolean;
+  viewerCanSeePredictions: boolean;
+  predictions: PredictionBoardPrediction[];
 };

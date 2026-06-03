@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarClock, Gift, ShieldCheck, Trophy } from "lucide-react";
+import { CalendarClock, Gift, Save, ShieldCheck, Trophy } from "lucide-react";
 import clsx from "clsx";
 import { MatchCard } from "../components/MatchCard";
 import { api, getApiError } from "../api/client";
-import type { Match } from "../types/domain";
-import { formatDateHeadingBR } from "../utils/date";
+import type { BonusQuestion, Match } from "../types/domain";
+import { formatDateHeadingBR, formatDateTimeBR } from "../utils/date";
 
 type ViewMode = "UPCOMING" | "GROUPS" | "KNOCKOUT" | "BONUS";
 
@@ -120,8 +120,8 @@ export function MatchesPage() {
 
       {message ? <p className="mb-4 rounded-lg border border-limebet/30 bg-limebet/10 px-3 py-2 text-sm font-semibold text-limebet">{message}</p> : null}
 
-      {viewMode === "KNOCKOUT" ? <ComingSoonPanel kind="knockout" /> : null}
-      {viewMode === "BONUS" ? <ComingSoonPanel kind="bonus" /> : null}
+      {viewMode === "KNOCKOUT" ? <ComingSoonPanel /> : null}
+      {viewMode === "BONUS" ? <BonusPredictionsPanel /> : null}
 
       {viewMode === "UPCOMING" || viewMode === "GROUPS" ? (
         <div className="space-y-6">
@@ -207,20 +207,15 @@ function CountdownUnit({ label, value }: { label: string; value: number }) {
   );
 }
 
-function ComingSoonPanel({ kind }: { kind: "knockout" | "bonus" }) {
-  const isBonus = kind === "bonus";
-  const Icon = isBonus ? Gift : ShieldCheck;
-
+function ComingSoonPanel() {
   return (
     <div className="rounded-lg border border-white/10 bg-felt p-5 text-white shadow-sm">
       <div className="mb-4 grid h-12 w-12 place-items-center rounded-lg bg-limebet text-ink">
-        <Icon size={24} />
+        <ShieldCheck size={24} />
       </div>
-      <h2 className="text-xl font-black">{isBonus ? "Palpites bônus" : "Mata-mata"}</h2>
+      <h2 className="text-xl font-black">Mata-mata</h2>
       <p className="mt-2 max-w-2xl text-sm leading-6 text-steel">
-        {isBonus
-          ? "Próxima evolução: campeão, artilheiro, melhor ataque, melhor defesa e perguntas especiais do bolão."
-          : "Os jogos eliminatórios entram quando os confrontos forem definidos. A tela já está reservada para essa fase."}
+        Os jogos eliminatórios entram quando os confrontos forem definidos. A tela já está reservada para essa fase.
       </p>
       <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-limebet/10 px-3 py-1 text-xs font-bold uppercase text-limebet">
         <CalendarClock size={14} />
@@ -228,4 +223,108 @@ function ComingSoonPanel({ kind }: { kind: "knockout" | "bonus" }) {
       </div>
     </div>
   );
+}
+
+function BonusPredictionsPanel() {
+  const [questions, setQuestions] = useState<BonusQuestion[]>([]);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [message, setMessage] = useState("");
+
+  async function loadBonus() {
+    const { data } = await api.get<{ questions: BonusQuestion[] }>("/bonus");
+    setQuestions(data.questions);
+    setAnswers(Object.fromEntries(data.questions.map((question) => [question.id, question.myPrediction?.answer ?? ""])));
+  }
+
+  useEffect(() => {
+    void loadBonus();
+  }, []);
+
+  async function saveBonus(questionId: string) {
+    setMessage("");
+
+    try {
+      await api.put(`/bonus/${questionId}/prediction`, {
+        answer: answers[questionId] ?? ""
+      });
+      await loadBonus();
+      setMessage("Palpite bônus salvo.");
+    } catch (error) {
+      setMessage(getApiError(error));
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border border-white/10 bg-felt p-5 text-white shadow-sm">
+        <div className="mb-4 grid h-12 w-12 place-items-center rounded-lg bg-limebet text-ink">
+          <Gift size={24} />
+        </div>
+        <h2 className="text-xl font-black">Palpites bônus</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-steel">
+          Responda antes do fechamento. Quando o admin lançar a resposta correta, os pontos entram no ranking.
+        </p>
+      </div>
+
+      {message ? <p className="rounded-lg border border-limebet/30 bg-limebet/10 px-3 py-2 text-sm font-semibold text-limebet">{message}</p> : null}
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        {questions.map((question) => {
+          const locked = question.computedState !== "OPEN";
+          return (
+            <article key={question.id} className="rounded-lg border border-white/10 bg-felt p-4 text-white shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold uppercase text-limebet">{question.points} pts</p>
+                  <h3 className="mt-1 text-lg font-black">{question.title}</h3>
+                  <p className="mt-1 text-sm leading-6 text-steel">{question.description}</p>
+                </div>
+                <span className={clsx("shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold", locked ? "border-amber-300/25 bg-amber-300/10 text-amber-200" : "border-limebet/25 bg-limebet/10 text-limebet")}>
+                  {bonusStateLabel(question.computedState)}
+                </span>
+              </div>
+
+              <p className="mt-3 text-xs text-steel">Fecha em {formatDateTimeBR(question.lockAtUtc)}</p>
+
+              <label className="mt-4 block">
+                <span className="text-sm font-medium text-white/80">Seu palpite</span>
+                <input
+                  className="mt-1 h-12 w-full rounded-lg border border-white/10 bg-ink px-3 text-white outline-none focus:border-limebet disabled:opacity-70"
+                  disabled={locked}
+                  value={answers[question.id] ?? ""}
+                  onChange={(event) => setAnswers((current) => ({ ...current, [question.id]: event.target.value }))}
+                />
+              </label>
+
+              {question.correctAnswer ? (
+                <div className="mt-3 rounded-lg border border-white/10 bg-ink px-3 py-2 text-sm">
+                  <span className="text-steel">Resposta correta: </span>
+                  <strong>{question.correctAnswer}</strong>
+                  <strong className="float-right text-limebet">{question.myPrediction?.points ?? 0} pts</strong>
+                </div>
+              ) : null}
+
+              <button
+                className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-limebet font-black text-ink disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={locked}
+                type="button"
+                onClick={() => saveBonus(question.id)}
+              >
+                <Save size={18} />
+                Salvar bônus
+              </button>
+            </article>
+          );
+        })}
+      </div>
+
+      {questions.length === 0 ? <p className="rounded-lg border border-white/10 bg-felt p-4 text-sm text-steel">Nenhuma pergunta bônus ativa.</p> : null}
+    </div>
+  );
+}
+
+function bonusStateLabel(state: BonusQuestion["computedState"]) {
+  if (state === "SETTLED") return "Apurado";
+  if (state === "LOCKED") return "Fechado";
+  return "Aberto";
 }

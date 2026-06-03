@@ -25,6 +25,9 @@ export function RankingPage() {
               <p className="text-xs text-steel">
                 {entry.exactScores} exatos · {entry.correctResults} resultados · {entry.missedPredictions} ausentes
               </p>
+              <p className="mt-1 text-xs text-steel">
+                Jogos {entry.matchPoints} pts · Bônus {entry.bonusPoints} pts
+              </p>
             </div>
             <strong className="text-xl text-limebet">{entry.totalPoints}</strong>
           </article>

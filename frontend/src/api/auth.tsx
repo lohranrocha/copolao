@@ -13,6 +13,7 @@ type AuthContextValue = {
     password: string;
     inviteCode: string;
   }) => Promise<void>;
+  updateUser: (user: User) => void;
   logout: () => void;
 };
 
@@ -50,6 +51,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await persistAuth(data);
   }
 
+  function updateUser(nextUser: User) {
+    localStorage.setItem("bolao.user", JSON.stringify(nextUser));
+    setUser(nextUser);
+  }
+
   function logout() {
     localStorage.removeItem("bolao.token");
     localStorage.removeItem("bolao.user");
@@ -58,7 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const value = useMemo(
-    () => ({ user, token, login, register, logout }),
+    () => ({ user, token, login, register, updateUser, logout }),
     [user, token]
   );
 

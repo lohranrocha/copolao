@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { BarChart3, CalendarDays, ClipboardList, Home, ListChecks, LogOut, Shield, Trophy, type LucideIcon } from "lucide-react";
+import { BarChart3, CalendarDays, ClipboardList, Home, ListChecks, LogOut, Rows3, Shield, Trophy, UserRound, type LucideIcon } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "../api/auth";
 
@@ -7,8 +7,10 @@ const baseItems = [
   { to: "/", label: "Inicio", icon: Home },
   { to: "/jogos", label: "Jogos", icon: CalendarDays },
   { to: "/palpites", label: "Palpites", icon: ClipboardList },
+  { to: "/todos-palpites", label: "Todos", icon: Rows3 },
   { to: "/ranking", label: "Ranking", icon: BarChart3 },
-  { to: "/regras", label: "Regras", icon: ListChecks }
+  { to: "/regras", label: "Regras", icon: ListChecks },
+  { to: "/perfil", label: "Perfil", icon: UserRound }
 ];
 
 export function AppLayout() {
@@ -19,15 +21,15 @@ export function AppLayout() {
     <div className="min-h-screen bg-ink text-white">
       <header className="sticky top-0 z-30 border-b border-white/10 bg-ink/95 text-white shadow-soft backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
+          <NavLink className="flex min-w-0 items-center gap-3 rounded-lg pr-2 transition hover:bg-white/[0.03]" to="/perfil">
             <div className="grid h-10 w-10 place-items-center rounded-lg bg-limebet text-ink shadow-glow">
               <Trophy size={22} />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-sm font-bold uppercase leading-5 tracking-wide">Copolão</p>
-              <p className="text-xs text-steel">{user?.nickname || user?.name}</p>
+              <p className="truncate text-xs text-steel">{user?.nickname || user?.name}</p>
             </div>
-          </div>
+          </NavLink>
           <button
             className="grid h-10 w-10 place-items-center rounded-lg border border-white/10 bg-felt text-white/75 transition hover:border-limebet/50 hover:text-limebet"
             type="button"
@@ -54,8 +56,8 @@ export function AppLayout() {
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-ink px-2 py-2 shadow-soft md:hidden">
-        <div className="grid grid-cols-4 gap-1">
-          {items.slice(0, 4).map((item) => (
+        <div className="grid grid-cols-5 gap-1">
+          {items.slice(0, 5).map((item) => (
             <NavItem key={item.to} {...item} compact />
           ))}
         </div>

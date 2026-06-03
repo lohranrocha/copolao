@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { prisma } from "../../plugins/prisma.js";
 import { requireAuth } from "../../utils/http.js";
-import { canPredict, getComputedMatchState } from "../../utils/matches.js";
+import { canPredict, canViewPublicPredictions, getComputedMatchState } from "../../utils/matches.js";
 
 const paramsSchema = z.object({
   matchId: z.string().uuid()
@@ -14,7 +14,86 @@ const predictionSchema = z.object({
 });
 
 export async function predictionsRoutes(app: FastifyInstance) {
-  app.get("/me", { preHandler: requireAuth }, async (request) => {
+  app.get("/predictions/board", { preHandler: requireAuth }, async (request) => {
+    const [participants, matches] = await Promise.all([
+      prisma.user.findMany({
+        where: { role: "PARTICIPANT" },
+        orderBy: { name: "asc" },
+        select: {
+          id: true,
+          name: true,
+          nickname: true
+        }
+      }),
+      prisma.match.findMany({
+        orderBy: [{ matchDateUtc: "asc" }, { matchNumber: "asc" }],
+        include: {
+          predictions: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  nickname: true
+                }
+              }
+            }
+          }
+        }
+      })
+    ]);
+
+    const rows = matches.map((match) => {
+      const isPublic = canViewPublicPredictions(match);
+      const viewerCanSeePredictions = request.user.role === "ADMIN" || isPublic;
+      const predictions = match.predictions.map((prediction) => {
+        const isOwnPrediction = prediction.userId === request.user.sub;
+
+        if (!viewerCanSeePredictions && !isOwnPrediction) {
+          return {
+            userId: prediction.userId,
+            user: prediction.user,
+            hidden: true
+          };
+        }
+
+        return {
+          userId: prediction.userId,
+          user: prediction.user,
+          hidden: false,
+          homeScorePrediction: prediction.homeScorePrediction,
+          awayScorePrediction: prediction.awayScorePrediction,
+          points: prediction.points,
+          isExactScore: prediction.isExactScore,
+          isCorrectResult: prediction.isCorrectResult
+        };
+      });
+
+      return {
+        id: match.id,
+        matchNumber: match.matchNumber,
+        homeTeam: match.homeTeam,
+        awayTeam: match.awayTeam,
+        groupCode: match.groupCode,
+        stage: match.stage,
+        matchDateUtc: match.matchDateUtc,
+        lockAtUtc: match.lockAtUtc,
+        homeScore: match.homeScore,
+        awayScore: match.awayScore,
+        computedState: getComputedMatchState(match),
+        isPublic,
+        viewerCanSeePredictions,
+        predictions
+      };
+    });
+
+    return {
+      participants,
+      matches: rows
+    };
+  });
+
+  app.get("/predictions/me", { preHandler: requireAuth }, async (request) => {
     const predictions = await prisma.prediction.findMany({
       where: { userId: request.user.sub },
       orderBy: { match: { matchDateUtc: "asc" } },

@@ -73,6 +73,31 @@ function lockAtUtc(matchDateUtc: string) {
   return new Date(new Date(matchDateUtc).getTime() - 60 * 60 * 1000);
 }
 
+const bonusLockAtUtc = new Date("2026-06-11T17:00:00.000Z");
+
+const bonusQuestions = [
+  {
+    title: "Campeão",
+    description: "Quem será o campeão da Copa?",
+    points: 20
+  },
+  {
+    title: "Vice-campeão",
+    description: "Quem será o vice-campeão?",
+    points: 12
+  },
+  {
+    title: "Artilheiro",
+    description: "Quem será o artilheiro da competição?",
+    points: 15
+  },
+  {
+    title: "Melhor ataque",
+    description: "Qual seleção fará mais gols na Copa?",
+    points: 10
+  }
+];
+
 // Initial group-stage schedule based on FIFA's official calendar page and
 // cross-checked with FourFourTwo's fixture list updated on 2026-04-08.
 const fixtures: FixtureSeed[] = [
@@ -200,6 +225,25 @@ async function main() {
         city: fixture.city,
         matchDateUtc: new Date(fixture.matchDateUtc),
         lockAtUtc: lockAtUtc(fixture.matchDateUtc)
+      }
+    });
+  }
+
+  for (const question of bonusQuestions) {
+    await prisma.bonusQuestion.upsert({
+      where: { title: question.title },
+      update: {
+        description: question.description,
+        points: question.points,
+        lockAtUtc: bonusLockAtUtc,
+        isActive: true
+      },
+      create: {
+        title: question.title,
+        description: question.description,
+        points: question.points,
+        lockAtUtc: bonusLockAtUtc,
+        isActive: true
       }
     });
   }
