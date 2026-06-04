@@ -2,7 +2,17 @@
 set -eu
 
 BACKUP_DIR="${BACKUP_DIR:-./backups}"
+ENV_FILE="${ENV_FILE:-deploy/.env.production}"
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
+
+if [ ! -f "$ENV_FILE" ]; then
+  echo "Arquivo de ambiente nao encontrado: $ENV_FILE" >&2
+  exit 1
+fi
+
+set -a
+. "$ENV_FILE"
+set +a
 
 mkdir -p "$BACKUP_DIR"
 
