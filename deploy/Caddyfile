@@ -1,0 +1,19 @@
+{
+	email {$ACME_EMAIL}
+}
+
+{$APP_DOMAIN} {
+	root * /srv
+	encode zstd gzip
+	try_files {path} /index.html
+	file_server
+}
+
+{$ROOT_DOMAIN} {
+	redir https://{$APP_DOMAIN}{uri} permanent
+}
+
+{$API_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy api:3333
+}

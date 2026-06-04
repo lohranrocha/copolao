@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Eye, EyeOff, Lock } from "lucide-react";
 import clsx from "clsx";
 import { PageHeader } from "../components/PageHeader";
+import { TeamFlag } from "../components/TeamFlag";
 import { api } from "../api/client";
 import type { PredictionBoardMatch, PredictionBoardParticipant } from "../types/domain";
 import { formatDateTimeBR } from "../utils/date";
@@ -84,9 +85,15 @@ function PredictionBoardCard({
             Grupo {match.groupCode} · {formatDateTimeBR(match.matchDateUtc)}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-base font-black">
-            <span>{homeAsset.flag} {match.homeTeam}</span>
+            <span className="inline-flex items-center gap-2">
+              <TeamFlag asset={homeAsset} label={match.homeTeam} size="sm" />
+              {match.homeTeam}
+            </span>
             <span className="text-limebet">x</span>
-            <span>{awayAsset.flag} {match.awayTeam}</span>
+            <span className="inline-flex items-center gap-2">
+              <TeamFlag asset={awayAsset} label={match.awayTeam} size="sm" />
+              {match.awayTeam}
+            </span>
           </div>
         </div>
         <span className={clsx("shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold", matchStateTone(match.computedState))}>

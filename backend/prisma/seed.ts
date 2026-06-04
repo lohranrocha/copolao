@@ -178,7 +178,6 @@ const fixtures: FixtureSeed[] = [
 async function main() {
   const adminEmail = process.env.DEFAULT_ADMIN_EMAIL ?? "admin@bolao.local";
   const adminPassword = process.env.DEFAULT_ADMIN_PASSWORD ?? "Admin@2026";
-  const inviteCode = (process.env.DEFAULT_INVITE_CODE ?? "COPA2026").toUpperCase();
 
   await prisma.user.upsert({
     where: { email: adminEmail },
@@ -189,16 +188,6 @@ async function main() {
       email: adminEmail,
       passwordHash: await bcrypt.hash(adminPassword, 10),
       role: "ADMIN"
-    }
-  });
-
-  await prisma.inviteCode.upsert({
-    where: { code: inviteCode },
-    update: { isActive: true },
-    create: {
-      code: inviteCode,
-      label: "Convite principal do bolao",
-      isActive: true
     }
   });
 

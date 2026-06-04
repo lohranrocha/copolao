@@ -7,6 +7,7 @@ import { DashboardPage } from "../pages/DashboardPage";
 import { LoginPage, RegisterPage } from "../pages/LoginPage";
 import { MatchesPage } from "../pages/MatchesPage";
 import { MyPredictionsPage } from "../pages/MyPredictionsPage";
+import { PaymentPage } from "../pages/PaymentPage";
 import { ProfilePage } from "../pages/ProfilePage";
 import { RankingPage } from "../pages/RankingPage";
 import { RulesPage } from "../pages/RulesPage";
@@ -16,6 +17,7 @@ export function AppRoutes() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/cadastro" element={<RegisterPage />} />
+      <Route path="/pagamento/:paymentId" element={<PaymentPage />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route index element={<DashboardPage />} />

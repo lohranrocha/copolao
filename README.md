@@ -38,7 +38,6 @@ npm run prisma:seed --workspace backend
 Esse seed cria exatamente a base inicial atual:
 
 - 1 usuario administrador.
-- 1 codigo de convite.
 - 72 jogos da fase de grupos.
 - 0 palpites.
 
@@ -55,9 +54,49 @@ npm run dev:frontend
 
 - Admin: `admin@bolao.local`
 - Senha: `Admin@2026`
-- Codigo de convite padrao: `COPA2026`
 
 Troque esses valores no primeiro deploy real.
+
+## Pagamento Pix com Asaas
+
+O cadastro novo ja nasce preparado para cobrar a inscricao de R$ 20 via Pix antes de liberar o acesso.
+
+Cadastro por convite esta desativado. Participantes entram somente pelo pagamento Pix.
+
+## Deploy
+
+O caminho recomendado para producao e VPS com Docker, Caddy e Postgres local. Veja [`docs/vps-deploy.md`](docs/vps-deploy.md).
+
+Tambem existe um guia alternativo para Render/Supabase em [`docs/deploy.md`](docs/deploy.md).
+
+Em desenvolvimento, o backend usa `PAYMENT_PROVIDER="mock"`. Nesse modo, a tela de pagamento mostra um Pix simulado e um botao para aprovar o pagamento sem chamar o Asaas.
+
+Para sandbox ou producao com Asaas, configure no backend:
+
+```bash
+PAYMENT_PROVIDER="asaas"
+REGISTRATION_PRICE_CENTS=2000
+PUBLIC_API_URL="https://seu-backend-publico.com"
+ASAAS_API_URL="https://api-sandbox.asaas.com/v3"
+ASAAS_API_KEY="$aact_hmlg_..."
+ASAAS_WEBHOOK_TOKEN="token-seguro-configurado-no-webhook"
+```
+
+Em producao, troque `ASAAS_API_URL` para:
+
+```bash
+ASAAS_API_URL="https://api.asaas.com/v3"
+```
+
+Depois, no painel do Asaas, cadastre o webhook de cobrancas apontando para:
+
+```text
+https://seu-backend-publico.com/api/webhooks/asaas
+```
+
+Selecione pelo menos o evento `PAYMENT_RECEIVED`. O token configurado no painel do Asaas deve ser o mesmo valor de `ASAAS_WEBHOOK_TOKEN`.
+
+Quando o Asaas confirmar o Pix, o backend marca o pagamento como pago, cria um codigo de acesso unico para auditoria e cadastra o participante automaticamente.
 
 ## Compartilhando com outro desenvolvedor
 

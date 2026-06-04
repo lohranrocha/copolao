@@ -28,6 +28,20 @@ enum MatchStatus {
   CANCELLED
 }
 
+enum PaymentProvider {
+  ASAAS
+  MERCADO_PAGO
+  MOCK
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  EXPIRED
+  FAILED
+  CANCELLED
+}
+
 model User {
   id                 String       @id @default(uuid()) @db.Uuid
   name               String       @db.VarChar(150)
@@ -40,6 +54,7 @@ model User {
   updatedAt          DateTime     @updatedAt @map("updated_at")
   predictions        Prediction[]
   bonusPredictions   BonusPrediction[]
+  groupPredictions   GroupStandingPrediction[]
 
   @@map("users")
 }
@@ -55,6 +70,36 @@ model InviteCode {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("invite_codes")
+}
+
+model Payment {
+  id                    String          @id @default(uuid()) @db.Uuid
+  provider              PaymentProvider @default(MOCK)
+  status                PaymentStatus   @default(PENDING)
+  amountCents           Int             @map("amount_cents")
+  currency              String          @default("BRL") @db.VarChar(3)
+  name                  String          @db.VarChar(150)
+  nickname              String?         @db.VarChar(80)
+  email                 String          @db.VarChar(150)
+  document              String?         @db.VarChar(20)
+  passwordHash          String          @map("password_hash") @db.VarChar(255)
+  accessCode            String          @unique @map("access_code") @db.VarChar(60)
+  providerCustomerId    String?         @map("provider_customer_id") @db.VarChar(120)
+  providerPaymentId     String?         @unique @map("provider_payment_id") @db.VarChar(120)
+  providerStatus        String?         @map("provider_status") @db.VarChar(80)
+  providerStatusDetail  String?         @map("provider_status_detail") @db.VarChar(120)
+  qrCode                String?         @map("qr_code") @db.Text
+  qrCodeBase64          String?         @map("qr_code_base64") @db.Text
+  ticketUrl             String?         @map("ticket_url") @db.Text
+  rawProviderResponse   Json?           @map("raw_provider_response")
+  paidAt                DateTime?       @map("paid_at")
+  expiresAt             DateTime        @map("expires_at")
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+
+  @@index([email])
+  @@index([status])
+  @@map("payments")
 }
 
 model Match {
@@ -132,4 +177,38 @@ model BonusPrediction {
   @@index([questionId])
   @@index([userId])
   @@map("bonus_predictions")
+}
+
+model GroupStandingPrediction {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @map("user_id") @db.Uuid
+  groupCode        String   @map("group_code") @db.VarChar(2)
+  firstTeam        String   @map("first_team") @db.VarChar(100)
+  secondTeam       String   @map("second_team") @db.VarChar(100)
+  thirdTeam        String   @map("third_team") @db.VarChar(100)
+  fourthTeam       String   @map("fourth_team") @db.VarChar(100)
+  points           Int      @default(0)
+  correctPositions Int      @default(0) @map("correct_positions")
+  isPerfect        Boolean  @default(false) @map("is_perfect")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupCode])
+  @@index([groupCode])
+  @@index([userId])
+  @@map("group_standing_predictions")
+}
+
+model GroupStandingResult {
+  id         String   @id @default(uuid()) @db.Uuid
+  groupCode  String   @unique @map("group_code") @db.VarChar(2)
+  firstTeam  String   @map("first_team") @db.VarChar(100)
+  secondTeam String   @map("second_team") @db.VarChar(100)
+  thirdTeam  String   @map("third_team") @db.VarChar(100)
+  fourthTeam String   @map("fourth_team") @db.VarChar(100)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("group_standing_results")
 }

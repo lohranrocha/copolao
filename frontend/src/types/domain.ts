@@ -1,5 +1,7 @@
 export type UserRole = "ADMIN" | "PARTICIPANT";
 
+export type PaymentStatus = "PENDING" | "PAID" | "EXPIRED" | "FAILED" | "CANCELLED";
+
 export type User = {
   id: string;
   name: string;
@@ -67,6 +69,19 @@ export type InviteCode = {
   updatedAt: string;
 };
 
+export type Payment = {
+  id: string;
+  status: PaymentStatus;
+  amountCents: number;
+  currency: string;
+  accessCode: string;
+  qrCode: string | null;
+  qrCodeBase64: string | null;
+  ticketUrl: string | null;
+  expiresAt: string;
+  paidAt: string | null;
+};
+
 export type BonusQuestionState = "OPEN" | "LOCKED" | "SETTLED";
 
 export type BonusPrediction = {
@@ -86,6 +101,44 @@ export type BonusQuestion = {
   correctAnswer: string | null;
   computedState: BonusQuestionState;
   myPrediction: BonusPrediction | null;
+};
+
+export type GroupStandingState = BonusQuestionState;
+
+export type GroupStandingPrediction = {
+  id: string;
+  groupCode: string;
+  firstTeam: string;
+  secondTeam: string;
+  thirdTeam: string;
+  fourthTeam: string;
+  points: number;
+  correctPositions: number;
+  isPerfect: boolean;
+  updatedAt: string;
+};
+
+export type GroupStandingResult = {
+  id: string;
+  groupCode: string;
+  firstTeam: string;
+  secondTeam: string;
+  thirdTeam: string;
+  fourthTeam: string;
+  updatedAt: string;
+};
+
+export type GroupStandingBonus = {
+  groupCode: string;
+  teams: string[];
+  lockAtUtc: string;
+  computedState: GroupStandingState;
+  result: GroupStandingResult | null;
+  myPrediction: GroupStandingPrediction | null;
+};
+
+export type AdminGroupStanding = Omit<GroupStandingBonus, "myPrediction"> & {
+  predictionCount: number;
 };
 
 export type AdminBonusQuestion = Omit<BonusQuestion, "myPrediction"> & {

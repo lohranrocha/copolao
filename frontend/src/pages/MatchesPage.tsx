@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { CalendarClock, Gift, Save, ShieldCheck, Trophy } from "lucide-react";
 import clsx from "clsx";
 import { MatchCard } from "../components/MatchCard";
+import { TeamFlag } from "../components/TeamFlag";
 import { api, getApiError } from "../api/client";
-import type { BonusQuestion, Match } from "../types/domain";
+import type { BonusQuestion, GroupStandingBonus, Match } from "../types/domain";
 import { formatDateHeadingBR, formatDateTimeBR } from "../utils/date";
+import { getTeamAsset } from "../utils/teamAssets";
 
 type ViewMode = "UPCOMING" | "GROUPS" | "KNOCKOUT" | "BONUS";
 
@@ -16,9 +19,10 @@ const tabs: Array<{ mode: ViewMode; label: string }> = [
 ];
 
 export function MatchesPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [matches, setMatches] = useState<Match[]>([]);
   const [group, setGroup] = useState("ALL");
-  const [viewMode, setViewMode] = useState<ViewMode>("UPCOMING");
+  const [viewMode, setViewMode] = useState<ViewMode>(() => viewModeFromParam(searchParams.get("aba")));
   const [message, setMessage] = useState("");
 
   async function loadMatches() {
@@ -29,6 +33,10 @@ export function MatchesPage() {
   useEffect(() => {
     void loadMatches();
   }, []);
+
+  useEffect(() => {
+    setViewMode(viewModeFromParam(searchParams.get("aba")));
+  }, [searchParams]);
 
   const groups = useMemo(
     () => ["ALL", ...Array.from(new Set(matches.map((match) => match.groupCode).filter((value): value is string => Boolean(value))))],
@@ -93,7 +101,10 @@ export function MatchesPage() {
               viewMode === tab.mode ? "bg-limebet text-ink shadow-glow" : "text-steel hover:bg-white/10 hover:text-white"
             )}
             type="button"
-            onClick={() => setViewMode(tab.mode)}
+            onClick={() => {
+              setViewMode(tab.mode);
+              setSearchParams(tab.mode === "UPCOMING" ? {} : { aba: tabParam(tab.mode) });
+            }}
           >
             {tab.label}
           </button>
@@ -153,6 +164,20 @@ function dateSections(matches: Match[]) {
     title,
     matches: sectionMatches
   }));
+}
+
+function viewModeFromParam(value: string | null): ViewMode {
+  if (value === "grupos") return "GROUPS";
+  if (value === "mata-mata") return "KNOCKOUT";
+  if (value === "bonus") return "BONUS";
+  return "UPCOMING";
+}
+
+function tabParam(mode: ViewMode) {
+  if (mode === "GROUPS") return "grupos";
+  if (mode === "KNOCKOUT") return "mata-mata";
+  if (mode === "BONUS") return "bonus";
+  return "proximos";
 }
 
 function groupSections(matches: Match[]) {
@@ -227,13 +252,37 @@ function ComingSoonPanel() {
 
 function BonusPredictionsPanel() {
   const [questions, setQuestions] = useState<BonusQuestion[]>([]);
+  const [groupStandings, setGroupStandings] = useState<GroupStandingBonus[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [standingAnswers, setStandingAnswers] = useState<Record<string, StandingDraft>>({});
+  const [activeStandingGroup, setActiveStandingGroup] = useState("");
   const [message, setMessage] = useState("");
 
   async function loadBonus() {
-    const { data } = await api.get<{ questions: BonusQuestion[] }>("/bonus");
+    const { data } = await api.get<{ questions: BonusQuestion[]; groupStandings: GroupStandingBonus[] }>("/bonus");
     setQuestions(data.questions);
+    setGroupStandings(data.groupStandings);
+    setActiveStandingGroup((current) =>
+      current && data.groupStandings.some((group) => group.groupCode === current)
+        ? current
+        : data.groupStandings[0]?.groupCode ?? ""
+    );
     setAnswers(Object.fromEntries(data.questions.map((question) => [question.id, question.myPrediction?.answer ?? ""])));
+    setStandingAnswers(
+      Object.fromEntries(
+        data.groupStandings.map((group) => [
+          group.groupCode,
+          group.myPrediction
+            ? {
+                firstTeam: group.myPrediction.firstTeam,
+                secondTeam: group.myPrediction.secondTeam,
+                thirdTeam: group.myPrediction.thirdTeam,
+                fourthTeam: group.myPrediction.fourthTeam
+              }
+            : blankStanding(group.teams)
+        ])
+      )
+    );
   }
 
   useEffect(() => {
@@ -254,6 +303,33 @@ function BonusPredictionsPanel() {
     }
   }
 
+  async function saveAllGroupStandings() {
+    setMessage("");
+
+    try {
+      await api.put("/bonus/groups/predictions", {
+        groups: groupStandings.map((group) => ({
+          groupCode: group.groupCode,
+          ...standingAnswers[group.groupCode]
+        }))
+      });
+      await loadBonus();
+      setMessage("Classificação de todos os grupos salva.");
+    } catch (error) {
+      setMessage(getApiError(error));
+    }
+  }
+
+  function updateStanding(groupCode: string, field: keyof StandingDraft, team: string) {
+    setStandingAnswers((current) => ({
+      ...current,
+      [groupCode]: {
+        ...(current[groupCode] ?? emptyStanding),
+        [field]: team
+      }
+    }));
+  }
+
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-white/10 bg-felt p-5 text-white shadow-sm">
@@ -267,6 +343,15 @@ function BonusPredictionsPanel() {
       </div>
 
       {message ? <p className="rounded-lg border border-limebet/30 bg-limebet/10 px-3 py-2 text-sm font-semibold text-limebet">{message}</p> : null}
+
+      <GroupStandingPanel
+        groups={groupStandings}
+        values={standingAnswers}
+        activeGroupCode={activeStandingGroup}
+        onActiveGroupChange={setActiveStandingGroup}
+        onChange={updateStanding}
+        onSaveAll={saveAllGroupStandings}
+      />
 
       <div className="grid gap-4 lg:grid-cols-2">
         {questions.map((question) => {
@@ -321,6 +406,181 @@ function BonusPredictionsPanel() {
       {questions.length === 0 ? <p className="rounded-lg border border-white/10 bg-felt p-4 text-sm text-steel">Nenhuma pergunta bônus ativa.</p> : null}
     </div>
   );
+}
+
+type StandingDraft = {
+  firstTeam: string;
+  secondTeam: string;
+  thirdTeam: string;
+  fourthTeam: string;
+};
+
+const emptyStanding: StandingDraft = {
+  firstTeam: "",
+  secondTeam: "",
+  thirdTeam: "",
+  fourthTeam: ""
+};
+
+const standingFields: Array<{ key: keyof StandingDraft; label: string }> = [
+  { key: "firstTeam", label: "1º lugar" },
+  { key: "secondTeam", label: "2º lugar" },
+  { key: "thirdTeam", label: "3º lugar" },
+  { key: "fourthTeam", label: "4º lugar" }
+];
+
+function blankStanding(_teams: string[]): StandingDraft {
+  return { ...emptyStanding };
+}
+
+function GroupStandingPanel({
+  groups,
+  values,
+  activeGroupCode,
+  onActiveGroupChange,
+  onChange,
+  onSaveAll
+}: {
+  groups: GroupStandingBonus[];
+  values: Record<string, StandingDraft>;
+  activeGroupCode: string;
+  onActiveGroupChange: (groupCode: string) => void;
+  onChange: (groupCode: string, field: keyof StandingDraft, team: string) => void;
+  onSaveAll: () => void;
+}) {
+  const activeGroup = groups.find((group) => group.groupCode === activeGroupCode) ?? groups[0];
+
+  if (!activeGroup) {
+    return null;
+  }
+
+  const value = values[activeGroup.groupCode] ?? blankStanding(activeGroup.teams);
+  const locked = activeGroup.computedState !== "OPEN";
+  const selectedTeams = new Set(Object.values(value).filter(Boolean));
+  const completedGroups = groups.filter((group) => isStandingComplete(values[group.groupCode])).length;
+  const allComplete = groups.length > 0 && completedGroups === groups.length;
+  const hasLockedGroup = groups.some((group) => group.computedState !== "OPEN");
+
+  return (
+    <section className="rounded-lg border border-white/10 bg-felt p-4 text-white shadow-sm">
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div className="min-w-0">
+          <h3 className="text-lg font-black">Classificação dos grupos</h3>
+          <p className="mt-1 text-sm leading-6 text-steel">
+            Escolha um grupo por vez. Suas escolhas ficam guardadas enquanto você troca de grupo, e o envio final salva todos de uma vez.
+          </p>
+          <p className="mt-2 text-xs font-bold uppercase text-limebet">
+            {completedGroups}/{groups.length} grupos completos
+          </p>
+        </div>
+        <button
+          className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-limebet px-4 text-sm font-black text-ink disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={!allComplete || hasLockedGroup}
+          type="button"
+          onClick={onSaveAll}
+        >
+          <Save size={18} />
+          Salvar todos os grupos
+        </button>
+      </div>
+
+      <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+        {groups.map((group) => {
+          const isActive = group.groupCode === activeGroup.groupCode;
+          const isComplete = isStandingComplete(values[group.groupCode]);
+          return (
+            <button
+              key={group.groupCode}
+              className={clsx(
+                "h-10 shrink-0 rounded-lg border px-4 text-sm font-black transition",
+                isActive
+                  ? "border-limebet bg-limebet text-ink shadow-glow"
+                  : isComplete
+                    ? "border-limebet/30 bg-limebet/10 text-limebet"
+                    : "border-white/10 bg-ink text-steel hover:border-limebet/35 hover:text-white"
+              )}
+              type="button"
+              onClick={() => onActiveGroupChange(group.groupCode)}
+            >
+              Grupo {group.groupCode}
+            </button>
+          );
+        })}
+      </div>
+
+      <article className={clsx("mt-4 rounded-lg border p-4", isStandingComplete(value) ? "border-limebet/35 bg-limebet/[0.06]" : "border-white/10 bg-ink")}>
+        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase text-limebet">Grupo {activeGroup.groupCode}</p>
+            <h4 className="mt-1 text-lg font-black">Ordem final do grupo</h4>
+            <p className="mt-1 text-xs text-steel">Fecha em {formatDateTimeBR(activeGroup.lockAtUtc)}</p>
+          </div>
+          <span className={clsx("w-fit rounded-full border px-2.5 py-1 text-xs font-semibold", locked ? "border-amber-300/25 bg-amber-300/10 text-amber-200" : activeGroup.myPrediction ? "border-limebet/35 bg-limebet/10 text-limebet" : "border-white/10 bg-white/5 text-steel")}>
+            {activeGroup.myPrediction ? "Palpite feito" : bonusStateLabel(activeGroup.computedState)}
+          </span>
+        </div>
+
+        <div className="mt-4 space-y-2">
+        {standingFields.map((field) => {
+          const currentTeam = value[field.key];
+          return (
+            <label key={field.key} className="grid grid-cols-[72px_1fr] items-center gap-3 rounded-lg bg-ink px-3 py-2">
+              <span className="text-xs font-black text-steel">{field.label}</span>
+              <select
+                className="h-10 rounded-lg border border-white/10 bg-felt px-3 text-sm font-semibold text-white outline-none focus:border-limebet disabled:opacity-70"
+                disabled={locked}
+                value={currentTeam}
+                onChange={(event) => onChange(activeGroup.groupCode, field.key, event.target.value)}
+              >
+                <option value="">Selecionar</option>
+                {activeGroup.teams.map((team) => {
+                  const isUsedElsewhere = selectedTeams.has(team) && currentTeam !== team;
+                  return (
+                    <option key={team} value={team} disabled={isUsedElsewhere}>
+                      {team}
+                    </option>
+                  );
+                })}
+              </select>
+            </label>
+          );
+        })}
+        </div>
+
+        <div className="mt-3 grid grid-cols-2 gap-2">
+        {activeGroup.teams.map((team) => {
+          const asset = getTeamAsset(team);
+          return (
+            <div key={team} className="flex min-w-0 items-center gap-2 rounded-lg border border-white/10 bg-ink px-2 py-2">
+              <TeamFlag asset={asset} label={team} size="sm" />
+              <span className="truncate text-xs font-semibold text-steel">{team}</span>
+            </div>
+          );
+        })}
+        </div>
+
+      {activeGroup.result ? (
+        <div className="mt-3 rounded-lg border border-white/10 bg-ink px-3 py-2 text-sm">
+          <span className="text-steel">Pontuação: </span>
+          <strong className="text-limebet">{activeGroup.myPrediction?.points ?? 0} pts</strong>
+          <span className="ml-2 text-xs text-steel">({activeGroup.myPrediction?.correctPositions ?? 0}/4)</span>
+        </div>
+      ) : null}
+      </article>
+
+      {!allComplete ? (
+        <p className="mt-3 rounded-lg border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-xs font-semibold text-amber-100">
+          Complete todos os grupos para liberar o salvamento único.
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
+function isStandingComplete(value?: StandingDraft) {
+  if (!value) return false;
+  const selectedTeams = new Set(Object.values(value).filter(Boolean));
+  return Object.values(value).every(Boolean) && selectedTeams.size === 4;
 }
 
 function bonusStateLabel(state: BonusQuestion["computedState"]) {

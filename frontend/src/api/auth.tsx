@@ -6,13 +6,7 @@ type AuthContextValue = {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (input: {
-    name: string;
-    nickname?: string;
-    email: string;
-    password: string;
-    inviteCode: string;
-  }) => Promise<void>;
+  persistSession: (response: { token: string; user: User }) => Promise<void>;
   updateUser: (user: User) => void;
   logout: () => void;
 };
@@ -28,7 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState(() => localStorage.getItem("bolao.token"));
   const [user, setUser] = useState<User | null>(() => getStoredUser());
 
-  async function persistAuth(response: { token: string; user: User }) {
+  async function persistSession(response: { token: string; user: User }) {
     localStorage.setItem("bolao.token", response.token);
     localStorage.setItem("bolao.user", JSON.stringify(response.user));
     setToken(response.token);
@@ -37,18 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function login(email: string, password: string) {
     const { data } = await api.post("/auth/login", { email, password });
-    await persistAuth(data);
-  }
-
-  async function register(input: {
-    name: string;
-    nickname?: string;
-    email: string;
-    password: string;
-    inviteCode: string;
-  }) {
-    const { data } = await api.post("/auth/register", input);
-    await persistAuth(data);
+    await persistSession(data);
   }
 
   function updateUser(nextUser: User) {
@@ -64,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const value = useMemo(
-    () => ({ user, token, login, register, updateUser, logout }),
+    () => ({ user, token, login, persistSession, updateUser, logout }),
     [user, token]
   );
 

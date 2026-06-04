@@ -21,7 +21,8 @@ async function buildRanking() {
           match: true
         }
       },
-      bonusPredictions: true
+      bonusPredictions: true,
+      groupPredictions: true
     }
   });
 
@@ -34,7 +35,9 @@ async function buildRanking() {
     ).length;
 
     const matchPoints = finishedPredictions.reduce((sum, prediction) => sum + prediction.points, 0);
-    const bonusPoints = user.bonusPredictions.reduce((sum, prediction) => sum + prediction.points, 0);
+    const bonusPoints =
+      user.bonusPredictions.reduce((sum, prediction) => sum + prediction.points, 0) +
+      user.groupPredictions.reduce((sum, prediction) => sum + prediction.points, 0);
 
     return {
       user: {

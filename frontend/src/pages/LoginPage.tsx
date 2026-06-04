@@ -1,7 +1,8 @@
 import { FormEvent, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../api/auth";
-import { getApiError } from "../api/client";
+import { api, getApiError } from "../api/client";
+import type { Payment } from "../types/domain";
 import copolaoLogo from "../assets/copolao-logo-transparent.png";
 
 export function LoginPage() {
@@ -51,14 +52,14 @@ export function LoginPage() {
 }
 
 export function RegisterPage() {
-  const { register, token } = useAuth();
+  const { token } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({
     name: "",
     nickname: "",
     email: "",
-    password: "",
-    inviteCode: ""
+    document: "",
+    password: ""
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -72,8 +73,14 @@ export function RegisterPage() {
     setError("");
     setLoading(true);
     try {
-      await register(form);
-      navigate("/");
+      const { data } = await api.post<{ payment: Payment }>("/payments/pix", {
+        name: form.name,
+        nickname: form.nickname,
+        email: form.email,
+        document: form.document,
+        password: form.password
+      });
+      navigate(`/pagamento/${data.payment.id}`);
     } catch (err) {
       setError(getApiError(err));
     } finally {
@@ -82,16 +89,16 @@ export function RegisterPage() {
   }
 
   return (
-    <AuthShell title="Criar conta" subtitle="O codigo de convite libera sua entrada no bolao.">
+    <AuthShell title="Criar conta" subtitle="Pague a inscricao de R$ 20 via Pix para liberar seu acesso.">
       <form className="space-y-4" onSubmit={submit}>
         <Field label="Nome" value={form.name} onChange={(name) => setForm((old) => ({ ...old, name }))} />
         <Field label="Apelido" value={form.nickname} onChange={(nickname) => setForm((old) => ({ ...old, nickname }))} />
         <Field label="E-mail" type="email" value={form.email} onChange={(email) => setForm((old) => ({ ...old, email }))} />
+        <Field label="CPF/CNPJ" value={form.document} onChange={(document) => setForm((old) => ({ ...old, document }))} />
         <Field label="Senha" type="password" value={form.password} onChange={(password) => setForm((old) => ({ ...old, password }))} />
-        <Field label="Codigo de convite" value={form.inviteCode} onChange={(inviteCode) => setForm((old) => ({ ...old, inviteCode }))} />
         {error ? <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p> : null}
         <button className="h-12 w-full rounded-lg bg-limebet font-black text-ink shadow-glow" disabled={loading}>
-          {loading ? "Criando..." : "Criar conta"}
+          {loading ? "Gerando Pix..." : "Gerar Pix"}
         </button>
         <p className="text-center text-sm text-steel">
           Ja tem conta?{" "}

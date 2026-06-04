@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Minus, Plus } from "lucide-react";
 import clsx from "clsx";
+import { TeamFlag } from "./TeamFlag";
 import type { Match } from "../types/domain";
 import { formatTimeBR } from "../utils/date";
 import { matchStateLabel, matchStateTone } from "../utils/match";
-import { getTeamAsset } from "../utils/teamAssets";
+import { getTeamAsset, type TeamAsset } from "../utils/teamAssets";
 
 export function MatchCard({
   match,
@@ -17,6 +18,7 @@ export function MatchCard({
   const [away, setAway] = useState(match.myPrediction?.awayScorePrediction ?? 0);
   const [saving, setSaving] = useState(false);
   const canEdit = match.computedState === "OPEN";
+  const hasPrediction = Boolean(match.myPrediction);
   const homeAsset = getTeamAsset(match.homeTeam);
   const awayAsset = getTeamAsset(match.awayTeam);
 
@@ -43,15 +45,29 @@ export function MatchCard({
   }
 
   return (
-    <article className="overflow-hidden rounded-lg border border-white/10 bg-felt shadow-sm">
-      <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-white/[0.03] px-4 py-3">
+    <article
+      className={clsx(
+        "overflow-hidden rounded-lg border shadow-sm transition",
+        hasPrediction
+          ? "border-limebet/45 bg-[linear-gradient(145deg,rgba(33,247,102,0.12),rgba(22,24,31,0.98)_34%)] shadow-glow"
+          : "border-white/10 bg-felt"
+      )}
+    >
+      <div className={clsx("flex items-center justify-between gap-3 border-b px-4 py-3", hasPrediction ? "border-limebet/20 bg-limebet/[0.06]" : "border-white/10 bg-white/[0.03]")}>
         <div className="flex items-center gap-2">
           <span className="rounded-full bg-limebet px-2 py-1 text-[11px] font-black uppercase text-ink">Grupo {match.groupCode}</span>
           <time className="text-xs font-semibold text-steel">{formatTimeBR(match.matchDateUtc)}</time>
         </div>
-        <span className={clsx("shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold", matchStateTone(match.computedState))}>
-          {matchStateLabel(match.computedState)}
-        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          {hasPrediction ? (
+            <span className="rounded-full border border-limebet/35 bg-limebet/10 px-2.5 py-1 text-xs font-black text-limebet">
+              Palpite feito
+            </span>
+          ) : null}
+          <span className={clsx("rounded-full border px-2.5 py-1 text-xs font-semibold", matchStateTone(match.computedState))}>
+            {matchStateLabel(match.computedState)}
+          </span>
+        </div>
       </div>
 
       {match.homeScore !== null && match.awayScore !== null ? (
@@ -62,8 +78,7 @@ export function MatchCard({
 
       <div className="space-y-3 p-4">
         <TeamScoreRow
-          code={homeAsset.code}
-          flag={homeAsset.flag}
+          asset={homeAsset}
           label={match.homeTeam}
           value={home}
           disabled={!canEdit}
@@ -75,8 +90,7 @@ export function MatchCard({
           <div className="h-px flex-1 bg-white/10" />
         </div>
         <TeamScoreRow
-          code={awayAsset.code}
-          flag={awayAsset.flag}
+          asset={awayAsset}
           label={match.awayTeam}
           value={away}
           disabled={!canEdit}
@@ -105,15 +119,13 @@ export function MatchCard({
 }
 
 function TeamScoreRow({
-  code,
-  flag,
+  asset,
   label,
   value,
   disabled,
   onChange
 }: {
-  code: string;
-  flag: string;
+  asset: TeamAsset;
   label: string;
   value: number;
   disabled: boolean;
@@ -126,12 +138,10 @@ function TeamScoreRow({
   return (
     <div className="grid grid-cols-[1fr_126px] items-center gap-3">
       <div className="flex min-w-0 items-center gap-3">
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/10 bg-white text-2xl shadow-sm">
-          {flag}
-        </span>
+        <TeamFlag asset={asset} label={label} />
         <span className="min-w-0">
           <span className="block truncate text-sm font-bold text-white">{label}</span>
-          <span className="text-xs font-semibold text-steel">{code}</span>
+          <span className="text-xs font-semibold text-steel">{asset.code}</span>
         </span>
       </div>
       <div className="grid h-14 grid-cols-[36px_1fr_36px] overflow-hidden rounded-lg border border-white/10 bg-ink">

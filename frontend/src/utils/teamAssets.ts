@@ -1,7 +1,27 @@
-type TeamAsset = {
+export type TeamAsset = {
   code: string;
   flag: string;
+  flagSvg?: string;
 };
+
+function svgDataUri(svg: string) {
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+const englandFlag = svgDataUri(`
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 36">
+    <rect width="60" height="36" fill="#fff"/>
+    <path fill="#c8102e" d="M0 14h60v8H0z"/>
+    <path fill="#c8102e" d="M26 0h8v36h-8z"/>
+  </svg>
+`);
+
+const scotlandFlag = svgDataUri(`
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 36">
+    <rect width="60" height="36" fill="#0065bd"/>
+    <path stroke="#fff" stroke-width="7" d="M0 0l60 36M60 0L0 36"/>
+  </svg>
+`);
 
 const assets: Record<string, TeamAsset> = {
   Alemanha: { code: "GER", flag: "🇩🇪" },
@@ -24,14 +44,14 @@ const assets: Record<string, TeamAsset> = {
   Curaçao: { code: "CUW", flag: "🇨🇼" },
   Egito: { code: "EGY", flag: "🇪🇬" },
   Equador: { code: "ECU", flag: "🇪🇨" },
-  Escócia: { code: "SCO", flag: "🏴" },
+  Escócia: { code: "SCO", flag: "Escócia", flagSvg: scotlandFlag },
   Espanha: { code: "ESP", flag: "🇪🇸" },
   "Estados Unidos": { code: "USA", flag: "🇺🇸" },
   França: { code: "FRA", flag: "🇫🇷" },
   Gana: { code: "GHA", flag: "🇬🇭" },
   Haiti: { code: "HAI", flag: "🇭🇹" },
   Holanda: { code: "NED", flag: "🇳🇱" },
-  Inglaterra: { code: "ENG", flag: "🏴" },
+  Inglaterra: { code: "ENG", flag: "Inglaterra", flagSvg: englandFlag },
   Irã: { code: "IRN", flag: "🇮🇷" },
   Iraque: { code: "IRQ", flag: "🇮🇶" },
   Japão: { code: "JPN", flag: "🇯🇵" },
