@@ -10,6 +10,7 @@ import {
   fetchAsaasPayment,
   fetchMercadoPagoPayment,
   paymentAuthPayload,
+  paymentProvider,
   paymentResponse,
   syncPaymentWithProvider,
   verifyMercadoPagoWebhookSignature
@@ -62,6 +63,7 @@ export async function paymentsRoutes(app: FastifyInstance) {
     const activePayment = await prisma.payment.findFirst({
       where: {
         email: body.email,
+        provider: paymentProvider(),
         status: "PENDING",
         expiresAt: { gt: new Date() }
       },
