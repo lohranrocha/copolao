@@ -43,8 +43,13 @@ type MercadoPagoPaymentResponse = {
 };
 
 export function paymentProvider() {
-  if (env.PAYMENT_PROVIDER === "asaas" && env.ASAAS_API_KEY) return "ASAAS";
-  return env.PAYMENT_PROVIDER === "mercado_pago" && env.MERCADO_PAGO_ACCESS_TOKEN ? "MERCADO_PAGO" : "MOCK";
+  if (env.PAYMENT_PROVIDER === "asaas") return "ASAAS";
+  if (env.PAYMENT_PROVIDER === "mercado_pago") return "MERCADO_PAGO";
+  return "MOCK";
+}
+
+function asaasApiKey() {
+  return env.ASAAS_API_KEY?.replace(/^\$\$/, "$");
 }
 
 export function verifyMercadoPagoWebhookSignature(input: {
@@ -136,7 +141,7 @@ export async function createPixPayment(input: CreatePixInput) {
 }
 
 async function createAsaasPix(payment: Payment) {
-  if (!env.ASAAS_API_KEY) {
+  if (!asaasApiKey()) {
     throw new Error("ASAAS_API_KEY nao configurado.");
   }
 
@@ -196,7 +201,8 @@ async function asaasRequest<T>(
     body?: unknown;
   } = {}
 ) {
-  if (!env.ASAAS_API_KEY) {
+  const apiKey = asaasApiKey();
+  if (!apiKey) {
     throw new Error("ASAAS_API_KEY nao configurado.");
   }
 
@@ -205,7 +211,7 @@ async function asaasRequest<T>(
     headers: {
       "Content-Type": "application/json",
       "User-Agent": "copolao",
-      access_token: env.ASAAS_API_KEY
+      access_token: apiKey
     },
     body: options.body ? JSON.stringify(options.body) : undefined
   });
