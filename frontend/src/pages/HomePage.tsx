@@ -16,9 +16,9 @@ const highlights = [
 ];
 
 export function HomePage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
 
-  if (token) {
+  if (token && user) {
     return <Navigate to="/dashboard" replace />;
   }
 

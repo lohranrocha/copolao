@@ -17,7 +17,7 @@ type PaymentStatusResponse = {
 
 export function PaymentPage() {
   const { paymentId } = useParams();
-  const { token, persistSession } = useAuth();
+  const { token, user, persistSession } = useAuth();
   const navigate = useNavigate();
   const [payment, setPayment] = useState<Payment | null>(null);
   const [generatedQrCode, setGeneratedQrCode] = useState("");
@@ -73,7 +73,7 @@ export function PaymentPage() {
     };
   }, [payment?.qrCode, payment?.qrCodeBase64]);
 
-  if (token) {
+  if (token && user) {
     return <Navigate to="/dashboard" replace />;
   }
 

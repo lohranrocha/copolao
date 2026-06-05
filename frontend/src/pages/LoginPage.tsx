@@ -6,14 +6,14 @@ import type { Payment } from "../types/domain";
 import copolaoLogo from "../assets/copolao-logo-transparent.png";
 
 export function LoginPage() {
-  const { login, token } = useAuth();
+  const { login, token, user } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  if (token) {
+  if (token && user) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -52,7 +52,7 @@ export function LoginPage() {
 }
 
 export function RegisterPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({
     name: "",
@@ -64,7 +64,7 @@ export function RegisterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  if (token) {
+  if (token && user) {
     return <Navigate to="/dashboard" replace />;
   }
 
