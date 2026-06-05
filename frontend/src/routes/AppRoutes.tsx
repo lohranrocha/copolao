@@ -4,6 +4,7 @@ import { ProtectedRoute } from "../components/ProtectedRoute";
 import { AdminPage } from "../pages/AdminPage";
 import { AllPredictionsPage } from "../pages/AllPredictionsPage";
 import { DashboardPage } from "../pages/DashboardPage";
+import { HomePage } from "../pages/HomePage";
 import { LoginPage, RegisterPage } from "../pages/LoginPage";
 import { MatchesPage } from "../pages/MatchesPage";
 import { MyPredictionsPage } from "../pages/MyPredictionsPage";
@@ -15,12 +16,13 @@ import { RulesPage } from "../pages/RulesPage";
 export function AppRoutes() {
   return (
     <Routes>
+      <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/cadastro" element={<RegisterPage />} />
       <Route path="/pagamento/:paymentId" element={<PaymentPage />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
-          <Route index element={<DashboardPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/jogos" element={<MatchesPage />} />
           <Route path="/palpites" element={<MyPredictionsPage />} />
           <Route path="/todos-palpites" element={<AllPredictionsPage />} />

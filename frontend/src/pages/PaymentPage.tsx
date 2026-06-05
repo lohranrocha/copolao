@@ -34,7 +34,7 @@ export function PaymentPage() {
 
       if (data.auth) {
         await persistSession(data.auth);
-        navigate("/", { replace: true });
+        navigate("/dashboard", { replace: true });
       }
     } catch (error) {
       setMessage(getApiError(error));
@@ -74,7 +74,7 @@ export function PaymentPage() {
   }, [payment?.qrCode, payment?.qrCodeBase64]);
 
   if (token) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   async function copyPix() {
@@ -91,7 +91,7 @@ export function PaymentPage() {
       const { data } = await api.post<PaymentStatusResponse>(`/payments/${paymentId}/mock-paid`);
       if (data.auth) {
         await persistSession(data.auth);
-        navigate("/", { replace: true });
+        navigate("/dashboard", { replace: true });
       }
     } catch (error) {
       setMessage(getApiError(error));

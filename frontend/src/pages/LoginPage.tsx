@@ -14,7 +14,7 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   if (token) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   async function submit(event: FormEvent) {
@@ -23,7 +23,7 @@ export function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
-      navigate("/");
+      navigate("/dashboard");
     } catch (err) {
       setError(getApiError(err));
     } finally {
@@ -65,7 +65,7 @@ export function RegisterPage() {
   const [loading, setLoading] = useState(false);
 
   if (token) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   async function submit(event: FormEvent) {

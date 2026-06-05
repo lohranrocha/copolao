@@ -5,7 +5,7 @@ import { useAuth } from "../api/auth";
 import copolaoLogo from "../assets/copolao-logo-transparent.png";
 
 const baseItems = [
-  { to: "/", label: "Inicio", icon: Home },
+  { to: "/dashboard", label: "Inicio", icon: Home },
   { to: "/jogos", label: "Jogos", icon: CalendarDays },
   { to: "/palpites", label: "Palpites", icon: ClipboardList },
   { to: "/todos-palpites", label: "Todos", icon: Rows3 },
