@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { CheckCircle2, Copy, Loader2, QrCode } from "lucide-react";
+import QRCode from "qrcode";
 import { api, getApiError } from "../api/client";
 import { useAuth } from "../api/auth";
 import type { Payment, User } from "../types/domain";
@@ -19,8 +20,10 @@ export function PaymentPage() {
   const { token, persistSession } = useAuth();
   const navigate = useNavigate();
   const [payment, setPayment] = useState<Payment | null>(null);
+  const [generatedQrCode, setGeneratedQrCode] = useState("");
   const [message, setMessage] = useState("");
   const [checking, setChecking] = useState(true);
+  const qrImageSrc = payment?.qrCodeBase64 ? normalizeQrImage(payment.qrCodeBase64) : generatedQrCode;
 
   async function loadStatus() {
     if (!paymentId) return;
@@ -45,6 +48,30 @@ export function PaymentPage() {
     const timer = window.setInterval(() => void loadStatus(), 5000);
     return () => window.clearInterval(timer);
   }, [paymentId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setGeneratedQrCode("");
+
+    if (!payment?.qrCode || payment.qrCodeBase64 || payment.qrCode.startsWith("PIX MOCK")) return;
+
+    QRCode.toDataURL(payment.qrCode, {
+      width: 360,
+      margin: 2,
+      color: {
+        dark: "#07111f",
+        light: "#ffffff"
+      }
+    }).then((dataUrl) => {
+      if (!cancelled) setGeneratedQrCode(dataUrl);
+    }).catch(() => {
+      if (!cancelled) setMessage("Pix copia e cola gerado. Nao foi possivel renderizar o QR Code.");
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [payment?.qrCode, payment?.qrCodeBase64]);
 
   if (token) {
     return <Navigate to="/" replace />;
@@ -92,8 +119,8 @@ export function PaymentPage() {
           </div>
 
           <div className="mt-5 grid place-items-center rounded-lg border border-white/10 bg-white p-3">
-            {payment?.qrCodeBase64 ? (
-              <img className="h-56 w-56" src={`data:image/png;base64,${payment.qrCodeBase64}`} alt="QR Code Pix" />
+            {qrImageSrc ? (
+              <img className="h-56 w-56" src={qrImageSrc} alt="QR Code Pix" />
             ) : (
               <div className="grid h-56 w-56 place-items-center rounded-lg bg-slate-100 text-slate-900">
                 <QrCode size={88} />
@@ -153,4 +180,8 @@ function paymentStatusLabel(status?: Payment["status"]) {
   if (status === "FAILED") return "Falhou";
   if (status === "CANCELLED") return "Cancelado";
   return "Aguardando";
+}
+
+function normalizeQrImage(value: string) {
+  return value.startsWith("data:image") ? value : `data:image/png;base64,${value}`;
 }
