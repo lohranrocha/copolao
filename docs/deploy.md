@@ -11,12 +11,6 @@ O objetivo e obter duas URLs publicas:
 - Frontend: `https://copolao-web.onrender.com`
 - Backend: `https://copolao-api.onrender.com`
 
-Com a URL publica do backend, o webhook do Asaas sera:
-
-```text
-https://copolao-api.onrender.com/api/webhooks/asaas
-```
-
 ## 1. Criar o banco no Supabase
 
 1. Crie um projeto em `https://supabase.com`.
@@ -64,14 +58,7 @@ ASAAS_API_KEY=
 ASAAS_WEBHOOK_TOKEN=
 ```
 
-Para producao com Asaas:
-
-```text
-PAYMENT_PROVIDER=asaas
-ASAAS_API_URL=https://api.asaas.com/v3
-ASAAS_API_KEY=<sua API key de producao>
-ASAAS_WEBHOOK_TOKEN=<token configurado no webhook do Asaas>
-```
+As variaveis de pagamento ficam em `mock` por compatibilidade com codigo legado. O fluxo atual de entrada e manual: o participante paga o Pix para o organizador e recebe um codigo de convite.
 
 O `JWT_SECRET` pode ser gerado automaticamente pelo Render via `render.yaml`.
 
@@ -115,35 +102,11 @@ https://copolao-web.onrender.com
 Depois tente:
 
 1. Abrir o frontend.
-2. Criar conta.
-3. Gerar Pix em modo `mock`.
-4. Simular pagamento.
+2. Entrar como admin.
+3. Criar um codigo de convite em `/admin`.
+4. Criar conta em `/cadastro` usando esse codigo.
 5. Entrar no app.
-
-## 8. Configurar Asaas
-
-Quando o backend estiver publico e testado:
-
-1. Entre no painel web do Asaas.
-2. Va em Integracoes > Webhooks.
-3. Crie webhook de cobrancas.
-4. URL:
-
-```text
-https://copolao-api.onrender.com/api/webhooks/asaas
-```
-
-5. Evento minimo:
-
-```text
-PAYMENT_RECEIVED
-```
-
-6. Configure um token seguro.
-7. Copie esse token para `ASAAS_WEBHOOK_TOKEN` no Render.
-8. Troque `PAYMENT_PROVIDER` para `asaas`.
-9. Redeploy do backend.
 
 ## Observacao sobre custo e estabilidade
 
-O Render Free e bom para validar o deploy, mas web services gratuitos podem dormir apos inatividade. Para pagamento online com webhook, o ideal e usar um plano sempre ligado no backend antes de abrir o bolao para todo mundo.
+O Render Free e bom para validar o deploy, mas web services gratuitos podem dormir apos inatividade. Para o bolao em producao, o ideal e manter backend e banco sempre ligados antes de abrir para todo mundo.

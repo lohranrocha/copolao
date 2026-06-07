@@ -4,7 +4,7 @@ import { useAuth } from "../api/auth";
 import copolaoLogo from "../assets/copolao-logo-transparent.png";
 
 const steps = [
-  { title: "1. Entre pelo Pix", text: "A inscrição libera sua conta automaticamente quando o pagamento for confirmado." },
+  { title: "1. Peça seu código", text: "Faça o Pix com o organizador e receba um código individual de acesso." },
   { title: "2. Faça seus palpites", text: "Palpite os placares dos jogos e responda os bônus antes do fechamento." },
   { title: "3. Acompanhe o ranking", text: "Depois dos resultados, a pontuação é somada e todos aparecem na tabela." }
 ];
@@ -62,12 +62,12 @@ export function HomePage() {
               Palpite nos jogos da Copa e acompanhe tudo em um ranking só.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-steel md:text-lg">
-              Você participa pelo Pix, palpita nos placares da fase de grupos, monta a ordem final dos grupos e responde bônus especiais.
+              Depois de receber seu código de acesso, você palpita nos placares da fase de grupos, monta a ordem final dos grupos e responde bônus especiais.
             </p>
 
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Link className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-limebet px-5 text-sm font-black text-ink shadow-glow" to="/cadastro">
-                Participar por R$ 20
+                Tenho meu código
                 <ArrowRight size={18} />
               </Link>
               <Link className="inline-flex h-12 items-center justify-center rounded-lg border border-white/10 px-5 text-sm font-bold text-white transition hover:border-limebet/60" to="/login">
@@ -111,7 +111,7 @@ export function HomePage() {
       <section className="mx-auto grid max-w-6xl gap-4 px-4 py-8 md:grid-cols-3">
         <InfoBlock icon={CalendarClock} title="Palpites até perto do jogo" text="Cada partida fecha 30 minutos antes do início." />
         <InfoBlock icon={BadgeCheck} title="Bônus de grupo" text="Monte a ordem final de cada grupo e some pontos extras." />
-        <InfoBlock icon={ShieldCheck} title="Disputa transparente" text="Ranking com todos os participantes e pontuação automática." />
+        <InfoBlock icon={ShieldCheck} title="Entrada por código" text="O acesso é liberado com um código individual enviado pelo organizador." />
       </section>
 
       <section className="mx-auto max-w-6xl px-4 pb-10">

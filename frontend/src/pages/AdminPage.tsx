@@ -1,32 +1,39 @@
 import { FormEvent, useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { CheckCircle2, Gift, Save, UsersRound, type LucideIcon } from "lucide-react";
+import { CheckCircle2, Gift, Power, Save, Ticket, UsersRound, type LucideIcon } from "lucide-react";
+import clsx from "clsx";
 import { PageHeader } from "../components/PageHeader";
 import { api, getApiError } from "../api/client";
-import type { AdminBonusQuestion, AdminGroupStanding, Match, User } from "../types/domain";
+import type { AdminBonusQuestion, AdminGroupStanding, InviteCode, Match, User } from "../types/domain";
 import { formatDateTimeBR } from "../utils/date";
 
 export function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
+  const [inviteCodes, setInviteCodes] = useState<InviteCode[]>([]);
   const [bonusQuestions, setBonusQuestions] = useState<AdminBonusQuestion[]>([]);
   const [groupStandings, setGroupStandings] = useState<AdminGroupStanding[]>([]);
   const [selectedMatchId, setSelectedMatchId] = useState("");
   const [homeScore, setHomeScore] = useState(0);
   const [awayScore, setAwayScore] = useState(0);
+  const [inviteCode, setInviteCode] = useState("");
+  const [inviteLabel, setInviteLabel] = useState("");
+  const [inviteMaxUses, setInviteMaxUses] = useState("1");
   const [bonusAnswers, setBonusAnswers] = useState<Record<string, string>>({});
   const [groupResults, setGroupResults] = useState<Record<string, StandingDraft>>({});
   const [message, setMessage] = useState("");
 
   async function load() {
-    const [usersResponse, matchesResponse, bonusResponse, groupResponse] = await Promise.all([
+    const [usersResponse, matchesResponse, invitesResponse, bonusResponse, groupResponse] = await Promise.all([
       api.get<{ users: User[] }>("/users"),
       api.get<{ matches: Match[] }>("/matches"),
+      api.get<{ inviteCodes: InviteCode[] }>("/admin/invite-codes"),
       api.get<{ questions: AdminBonusQuestion[] }>("/admin/bonus-questions"),
       api.get<{ groups: AdminGroupStanding[] }>("/admin/group-standings")
     ]);
     setUsers(usersResponse.data.users);
     setMatches(matchesResponse.data.matches);
+    setInviteCodes(invitesResponse.data.inviteCodes);
     setBonusQuestions(bonusResponse.data.questions);
     setGroupStandings(groupResponse.data.groups);
     setBonusAnswers(Object.fromEntries(bonusResponse.data.questions.map((question) => [question.id, question.correctAnswer ?? ""])));
@@ -62,6 +69,38 @@ export function AdminPage() {
       });
       await load();
       setMessage("Resultado salvo e pontuação recalculada.");
+    } catch (error) {
+      setMessage(getApiError(error));
+    }
+  }
+
+  async function createInvite(event: FormEvent) {
+    event.preventDefault();
+    setMessage("");
+    try {
+      await api.post("/admin/invite-codes", {
+        code: inviteCode,
+        label: inviteLabel,
+        maxUses: inviteMaxUses ? Number(inviteMaxUses) : null
+      });
+      setInviteCode("");
+      setInviteLabel("");
+      setInviteMaxUses("1");
+      await load();
+      setMessage("Codigo de convite criado.");
+    } catch (error) {
+      setMessage(getApiError(error));
+    }
+  }
+
+  async function toggleInvite(invite: InviteCode) {
+    setMessage("");
+    try {
+      await api.patch(`/admin/invite-codes/${invite.id}`, {
+        isActive: !invite.isActive
+      });
+      await load();
+      setMessage(invite.isActive ? "Convite desativado." : "Convite ativado.");
     } catch (error) {
       setMessage(getApiError(error));
     }
@@ -105,7 +144,7 @@ export function AdminPage() {
 
   return (
     <section>
-      <PageHeader title="Admin" description="Operação do bolão: participantes, resultados e bônus." />
+      <PageHeader title="Admin" description="Operação do bolão: participantes, convites, resultados e bônus." />
 
       {message ? <p className="mb-4 rounded-lg border border-limebet/25 bg-limebet/10 px-3 py-2 text-sm font-semibold text-limebet">{message}</p> : null}
 
@@ -120,6 +159,65 @@ export function AdminPage() {
                     <p className="truncate text-xs text-steel">{user.email}</p>
                   </div>
                   <span className="shrink-0 rounded-full bg-limebet/10 px-2 py-1 text-xs font-semibold text-limebet">{user.role}</span>
+                </div>
+              ))}
+            </div>
+          </Panel>
+
+          <Panel title="Convites" icon={Ticket}>
+            <form className="grid gap-3 md:grid-cols-[1fr_1fr_120px_auto]" onSubmit={createInvite}>
+              <input
+                className="h-11 rounded-lg border border-white/10 bg-ink px-3 text-sm text-white outline-none focus:border-limebet"
+                placeholder="Codigo"
+                value={inviteCode}
+                onChange={(event) => setInviteCode(event.target.value.toUpperCase())}
+                required
+              />
+              <input
+                className="h-11 rounded-lg border border-white/10 bg-ink px-3 text-sm text-white outline-none focus:border-limebet"
+                placeholder="Descricao"
+                value={inviteLabel}
+                onChange={(event) => setInviteLabel(event.target.value)}
+                required
+              />
+              <input
+                className="h-11 rounded-lg border border-white/10 bg-ink px-3 text-sm text-white outline-none focus:border-limebet"
+                min={1}
+                placeholder="Limite"
+                type="number"
+                value={inviteMaxUses}
+                onChange={(event) => setInviteMaxUses(event.target.value)}
+              />
+              <button className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-limebet px-4 text-sm font-black text-ink" type="submit">
+                <Save size={17} />
+                Criar
+              </button>
+            </form>
+
+            <div className="mt-4 space-y-2">
+              {inviteCodes.length === 0 ? (
+                <p className="rounded-lg bg-ink px-3 py-3 text-sm text-steel">Nenhum codigo criado ainda.</p>
+              ) : null}
+
+              {inviteCodes.map((invite) => (
+                <div key={invite.id} className="grid gap-2 rounded-lg bg-ink p-3 text-sm md:grid-cols-[1fr_auto_auto] md:items-center">
+                  <div className="min-w-0">
+                    <p className="truncate font-black text-white">{invite.code}</p>
+                    <p className="truncate text-xs text-steel">
+                      {invite.label} · {invite.usedCount}/{invite.maxUses ?? "sem limite"} usos
+                    </p>
+                  </div>
+                  <span className={clsx("w-fit rounded-full px-2 py-1 text-xs font-bold", invite.isActive ? "bg-limebet/10 text-limebet" : "bg-white/10 text-steel")}>
+                    {invite.isActive ? "Ativo" : "Inativo"}
+                  </span>
+                  <button
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-white/10 px-3 text-xs font-bold text-white transition hover:border-limebet/50"
+                    type="button"
+                    onClick={() => toggleInvite(invite)}
+                  >
+                    <Power size={15} />
+                    {invite.isActive ? "Desativar" : "Ativar"}
+                  </button>
                 </div>
               ))}
             </div>

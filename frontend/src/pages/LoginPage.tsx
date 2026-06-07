@@ -1,8 +1,7 @@
 import { FormEvent, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../api/auth";
-import { api, getApiError } from "../api/client";
-import type { Payment } from "../types/domain";
+import { getApiError } from "../api/client";
 import copolaoLogo from "../assets/copolao-logo-transparent.png";
 
 export function LoginPage() {
@@ -52,14 +51,14 @@ export function LoginPage() {
 }
 
 export function RegisterPage() {
-  const { token, user } = useAuth();
+  const { register, token, user } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({
     name: "",
     nickname: "",
     email: "",
-    document: "",
-    password: ""
+    password: "",
+    inviteCode: ""
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -73,14 +72,8 @@ export function RegisterPage() {
     setError("");
     setLoading(true);
     try {
-      const { data } = await api.post<{ payment: Payment }>("/payments/pix", {
-        name: form.name,
-        nickname: form.nickname,
-        email: form.email,
-        document: form.document,
-        password: form.password
-      });
-      navigate(`/pagamento/${data.payment.id}`);
+      await register(form);
+      navigate("/dashboard");
     } catch (err) {
       setError(getApiError(err));
     } finally {
@@ -89,16 +82,16 @@ export function RegisterPage() {
   }
 
   return (
-    <AuthShell title="Criar conta" subtitle="Pague a inscricao de R$ 20 via Pix para liberar seu acesso.">
+    <AuthShell title="Criar conta" subtitle="Depois do Pix enviado ao organizador, use o codigo recebido para liberar sua entrada.">
       <form className="space-y-4" onSubmit={submit}>
         <Field label="Nome" value={form.name} onChange={(name) => setForm((old) => ({ ...old, name }))} />
         <Field label="Apelido" value={form.nickname} onChange={(nickname) => setForm((old) => ({ ...old, nickname }))} />
         <Field label="E-mail" type="email" value={form.email} onChange={(email) => setForm((old) => ({ ...old, email }))} />
-        <Field label="CPF/CNPJ" value={form.document} onChange={(document) => setForm((old) => ({ ...old, document }))} />
         <Field label="Senha" type="password" value={form.password} onChange={(password) => setForm((old) => ({ ...old, password }))} />
+        <Field label="Codigo de convite" value={form.inviteCode} onChange={(inviteCode) => setForm((old) => ({ ...old, inviteCode }))} />
         {error ? <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p> : null}
         <button className="h-12 w-full rounded-lg bg-limebet font-black text-ink shadow-glow" disabled={loading}>
-          {loading ? "Gerando Pix..." : "Gerar Pix"}
+          {loading ? "Criando..." : "Criar conta"}
         </button>
         <p className="text-center text-sm text-steel">
           Ja tem conta?{" "}

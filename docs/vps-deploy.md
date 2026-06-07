@@ -22,13 +22,6 @@ E-mail para SSL: seu-email@exemplo.com.br
 Usuario SSH: root ou outro usuario sudo
 ```
 
-Depois do Asaas:
-
-```text
-ASAAS_API_KEY:
-ASAAS_WEBHOOK_TOKEN:
-```
-
 ## 2. DNS
 
 No painel do dominio ou no Cloudflare, crie dois registros `A`:
@@ -124,7 +117,7 @@ ASAAS_API_KEY=
 ASAAS_WEBHOOK_TOKEN=
 ```
 
-Comece com `PAYMENT_PROVIDER=mock` para validar o site online antes de ligar o Asaas.
+As variaveis de pagamento ficam em modo `mock` por compatibilidade com codigo legado, mas o fluxo principal de entrada e manual: o participante paga o Pix para o organizador, recebe um codigo e usa esse codigo no cadastro.
 
 ## 6. Subir a Aplicacao
 
@@ -175,6 +168,8 @@ Senha: Admin@2026
 
 Troque a senha depois pelo banco ou por uma funcionalidade futura de perfil/senha.
 
+Para liberar participantes, acesse o painel admin em `/admin`, crie um codigo de convite e envie para a pessoa depois de conferir o Pix. Para um codigo individual, use limite `1`.
+
 ## 8. Atualizar Depois de Mudancas
 
 Quando houver novo codigo no GitHub:
@@ -209,41 +204,7 @@ Adicione:
 0 3 * * * cd /opt/copolao && sh deploy/scripts/backup-postgres.sh >> /var/log/copolao-backup.log 2>&1
 ```
 
-## 10. Configurar Asaas
-
-Quando o site estiver online:
-
-1. Crie ou copie sua API Key no Asaas.
-2. Crie o webhook de cobrancas no Asaas.
-3. URL do webhook:
-
-```text
-https://api.copolao.com.br/api/webhooks/asaas
-```
-
-4. Evento minimo:
-
-```text
-PAYMENT_RECEIVED
-```
-
-5. Configure um token no webhook.
-6. Atualize `deploy/.env.production`:
-
-```text
-PAYMENT_PROVIDER=asaas
-ASAAS_API_URL=https://api.asaas.com/v3
-ASAAS_API_KEY=sua-chave
-ASAAS_WEBHOOK_TOKEN=token-do-webhook
-```
-
-7. Recrie a API:
-
-```bash
-docker compose --env-file deploy/.env.production -f deploy/docker-compose.prod.yml up -d --build api
-```
-
-## 11. Portas Necessarias
+## 10. Portas Necessarias
 
 No firewall do provedor, libere:
 

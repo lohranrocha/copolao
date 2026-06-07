@@ -57,46 +57,22 @@ npm run dev:frontend
 
 Troque esses valores no primeiro deploy real.
 
-## Pagamento Pix com Asaas
+## Entrada por Pix manual e código
 
-O cadastro novo ja nasce preparado para cobrar a inscricao de R$ 20 via Pix antes de liberar o acesso.
+O fluxo atual e simples:
 
-Cadastro por convite esta desativado. Participantes entram somente pelo pagamento Pix.
+- A pessoa faz o Pix diretamente para o organizador.
+- O admin cria um codigo no painel `/admin`.
+- A pessoa usa esse codigo em `/cadastro`.
+- Para liberar uma unica pessoa, crie o codigo com limite de uso `1`.
+
+Nao mantenha codigos de acesso fixos no repositorio. Eles devem ser criados pelo painel admin ou diretamente no banco de producao.
 
 ## Deploy
 
 O caminho recomendado para producao e VPS com Docker, Caddy e Postgres local. Veja [`docs/vps-deploy.md`](docs/vps-deploy.md).
 
 Tambem existe um guia alternativo para Render/Supabase em [`docs/deploy.md`](docs/deploy.md).
-
-Em desenvolvimento, o backend usa `PAYMENT_PROVIDER="mock"`. Nesse modo, a tela de pagamento mostra um Pix simulado e um botao para aprovar o pagamento sem chamar o Asaas.
-
-Para sandbox ou producao com Asaas, configure no backend:
-
-```bash
-PAYMENT_PROVIDER="asaas"
-REGISTRATION_PRICE_CENTS=2000
-PUBLIC_API_URL="https://seu-backend-publico.com"
-ASAAS_API_URL="https://api-sandbox.asaas.com/v3"
-ASAAS_API_KEY="$aact_hmlg_..."
-ASAAS_WEBHOOK_TOKEN="token-seguro-configurado-no-webhook"
-```
-
-Em producao, troque `ASAAS_API_URL` para:
-
-```bash
-ASAAS_API_URL="https://api.asaas.com/v3"
-```
-
-Depois, no painel do Asaas, cadastre o webhook de cobrancas apontando para:
-
-```text
-https://seu-backend-publico.com/api/webhooks/asaas
-```
-
-Selecione pelo menos o evento `PAYMENT_RECEIVED`. O token configurado no painel do Asaas deve ser o mesmo valor de `ASAAS_WEBHOOK_TOKEN`.
-
-Quando o Asaas confirmar o Pix, o backend marca o pagamento como pago, cria um codigo de acesso unico para auditoria e cadastra o participante automaticamente.
 
 ## Compartilhando com outro desenvolvedor
 

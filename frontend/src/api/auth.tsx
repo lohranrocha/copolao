@@ -6,6 +6,13 @@ type AuthContextValue = {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
+  register: (input: {
+    name: string;
+    nickname?: string;
+    email: string;
+    password: string;
+    inviteCode: string;
+  }) => Promise<void>;
   persistSession: (response: { token: string; user: User }) => Promise<void>;
   updateUser: (user: User) => void;
   logout: () => void;
@@ -34,6 +41,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await persistSession(data);
   }
 
+  async function register(input: {
+    name: string;
+    nickname?: string;
+    email: string;
+    password: string;
+    inviteCode: string;
+  }) {
+    const { data } = await api.post("/auth/register", input);
+    await persistSession(data);
+  }
+
   function updateUser(nextUser: User) {
     localStorage.setItem("bolao.user", JSON.stringify(nextUser));
     setUser(nextUser);
@@ -47,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const value = useMemo(
-    () => ({ user, token, login, persistSession, updateUser, logout }),
+    () => ({ user, token, login, register, persistSession, updateUser, logout }),
     [user, token]
   );
 

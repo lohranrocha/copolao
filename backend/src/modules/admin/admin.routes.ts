@@ -15,6 +15,18 @@ const uuidParamsSchema = z.object({
   id: z.string().uuid()
 });
 
+const createInviteSchema = z.object({
+  code: z.string().trim().min(3).max(60).transform((value) => value.toUpperCase()),
+  label: z.string().trim().min(2).max(120),
+  maxUses: z.number().int().min(1).nullable().optional()
+});
+
+const updateInviteSchema = z.object({
+  label: z.string().trim().min(2).max(120).optional(),
+  isActive: z.boolean().optional(),
+  maxUses: z.number().int().min(1).nullable().optional()
+});
+
 const createBonusQuestionSchema = z.object({
   title: z.string().trim().min(2).max(120),
   description: z.string().trim().min(2).max(255),
@@ -38,6 +50,49 @@ const groupStandingResultSchema = z.object({
 });
 
 export async function adminRoutes(app: FastifyInstance) {
+  app.get("/invite-codes", { preHandler: requireAdmin }, async () => {
+    const inviteCodes = await prisma.inviteCode.findMany({
+      orderBy: [{ isActive: "desc" }, { createdAt: "desc" }]
+    });
+
+    return { inviteCodes };
+  });
+
+  app.post("/invite-codes", { preHandler: requireAdmin }, async (request, reply) => {
+    const body = createInviteSchema.parse(request.body);
+    const existingInvite = await prisma.inviteCode.findUnique({ where: { code: body.code } });
+    if (existingInvite) {
+      return reply.status(409).send({ message: "Este codigo de convite ja existe." });
+    }
+
+    const inviteCode = await prisma.inviteCode.create({
+      data: {
+        code: body.code,
+        label: body.label,
+        maxUses: body.maxUses ?? null,
+        isActive: true
+      }
+    });
+
+    return reply.status(201).send({ inviteCode });
+  });
+
+  app.patch("/invite-codes/:id", { preHandler: requireAdmin }, async (request, reply) => {
+    const { id } = uuidParamsSchema.parse(request.params);
+    const body = updateInviteSchema.parse(request.body);
+
+    const inviteCode = await prisma.inviteCode.update({
+      where: { id },
+      data: body
+    }).catch(() => null);
+
+    if (!inviteCode) {
+      return reply.status(404).send({ message: "Codigo de convite nao encontrado." });
+    }
+
+    return { inviteCode };
+  });
+
   app.get("/bonus-questions", { preHandler: requireAdmin }, async () => {
     const questions = await prisma.bonusQuestion.findMany({
       orderBy: [{ lockAtUtc: "asc" }, { title: "asc" }],
