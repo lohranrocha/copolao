@@ -3,6 +3,7 @@ import { Eye, EyeOff, Lock } from "lucide-react";
 import clsx from "clsx";
 import { PageHeader } from "../components/PageHeader";
 import { TeamFlag } from "../components/TeamFlag";
+import { useAuth } from "../api/auth";
 import { api } from "../api/client";
 import type { PredictionBoardMatch, PredictionBoardParticipant } from "../types/domain";
 import { formatDateTimeBR } from "../utils/date";
@@ -15,6 +16,7 @@ type BoardResponse = {
 };
 
 export function AllPredictionsPage() {
+  const { user } = useAuth();
   const [participants, setParticipants] = useState<PredictionBoardParticipant[]>([]);
   const [matches, setMatches] = useState<PredictionBoardMatch[]>([]);
   const [group, setGroup] = useState("ALL");
@@ -57,7 +59,7 @@ export function AllPredictionsPage() {
 
       <div className="space-y-4">
         {visibleMatches.map((match) => (
-          <PredictionBoardCard key={match.id} match={match} participants={participants} />
+          <PredictionBoardCard key={match.id} match={match} participants={participants} currentUserId={user?.id ?? null} />
         ))}
       </div>
 
@@ -68,10 +70,12 @@ export function AllPredictionsPage() {
 
 function PredictionBoardCard({
   match,
-  participants
+  participants,
+  currentUserId
 }: {
   match: PredictionBoardMatch;
   participants: PredictionBoardParticipant[];
+  currentUserId: string | null;
 }) {
   const homeAsset = getTeamAsset(match.homeTeam);
   const awayAsset = getTeamAsset(match.awayTeam);
@@ -108,14 +112,16 @@ function PredictionBoardCard({
 
       <div className="divide-y divide-white/10">
         {participants.map((participant) => {
+          const isOwnParticipant = participant.id === currentUserId;
+          const shouldMaskParticipant = !match.isPublic && !isOwnParticipant;
           const prediction = predictionsByUser.get(participant.id);
           return (
             <div key={participant.id} className="grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-3">
               <div className="min-w-0">
                 <p className="truncate text-sm font-bold">{participant.nickname || participant.name}</p>
-                <p className="text-xs text-steel">{prediction ? predictionLabel(prediction.hidden) : "Sem palpite"}</p>
+                <p className="text-xs text-steel">{shouldMaskParticipant ? "Oculto até o início" : prediction ? predictionLabel(prediction.hidden) : "Sem palpite"}</p>
               </div>
-              <PredictionValue prediction={prediction} />
+              <PredictionValue masked={shouldMaskParticipant} prediction={prediction} />
             </div>
           );
         })}
@@ -126,7 +132,22 @@ function PredictionBoardCard({
   );
 }
 
-function PredictionValue({ prediction }: { prediction: PredictionBoardMatch["predictions"][number] | undefined }) {
+function PredictionValue({
+  prediction,
+  masked
+}: {
+  prediction: PredictionBoardMatch["predictions"][number] | undefined;
+  masked: boolean;
+}) {
+  if (masked) {
+    return (
+      <span className="inline-flex items-center gap-2 rounded-lg border border-amber-300/25 bg-amber-300/10 px-3 py-2 text-sm font-bold text-amber-200">
+        <Lock size={14} />
+        oculto
+      </span>
+    );
+  }
+
   if (!prediction) {
     return <span className="rounded-lg border border-white/10 px-3 py-2 text-sm font-bold text-steel">--</span>;
   }
@@ -149,7 +170,6 @@ function PredictionValue({ prediction }: { prediction: PredictionBoardMatch["pre
 
 function visibilityLabel(match: PredictionBoardMatch) {
   if (match.isPublic) return "Palpites liberados para todos.";
-  if (match.viewerCanSeePredictions) return "Visível para admin. Participantes só veem os próprios palpites antes do início.";
   return "Palpites dos outros ficam ocultos até o início.";
 }
 

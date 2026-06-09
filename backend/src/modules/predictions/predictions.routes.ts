@@ -45,19 +45,9 @@ export async function predictionsRoutes(app: FastifyInstance) {
 
     const rows = matches.map((match) => {
       const isPublic = canViewPublicPredictions(match);
-      const viewerCanSeePredictions = request.user.role === "ADMIN" || isPublic;
-      const predictions = match.predictions.map((prediction) => {
-        const isOwnPrediction = prediction.userId === request.user.sub;
-
-        if (!viewerCanSeePredictions && !isOwnPrediction) {
-          return {
-            userId: prediction.userId,
-            user: prediction.user,
-            hidden: true
-          };
-        }
-
-        return {
+      const predictions = match.predictions
+        .filter((prediction) => isPublic || prediction.userId === request.user.sub)
+        .map((prediction) => ({
           userId: prediction.userId,
           user: prediction.user,
           hidden: false,
@@ -66,8 +56,7 @@ export async function predictionsRoutes(app: FastifyInstance) {
           points: prediction.points,
           isExactScore: prediction.isExactScore,
           isCorrectResult: prediction.isCorrectResult
-        };
-      });
+        }));
 
       return {
         id: match.id,
@@ -82,7 +71,7 @@ export async function predictionsRoutes(app: FastifyInstance) {
         awayScore: match.awayScore,
         computedState: getComputedMatchState(match),
         isPublic,
-        viewerCanSeePredictions,
+        viewerCanSeePredictions: isPublic,
         predictions
       };
     });

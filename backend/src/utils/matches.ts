@@ -16,5 +16,5 @@ export function canPredict(match: Match, now = new Date()) {
 }
 
 export function canViewPublicPredictions(match: Match, now = new Date()) {
-  return now >= match.matchDateUtc || getComputedMatchState(match, now) === "FINISHED";
+  return match.status !== "CANCELLED" && now >= match.matchDateUtc;
 }

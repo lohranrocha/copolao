@@ -55,7 +55,7 @@ export async function matchesRoutes(app: FastifyInstance) {
       return reply.status(404).send({ message: "Jogo nao encontrado." });
     }
 
-    if (request.user.role !== "ADMIN" && !canViewPublicPredictions(match)) {
+    if (!canViewPublicPredictions(match)) {
       return reply.status(403).send({
         message: "Os palpites dos participantes ficam visiveis apenas apos o inicio do jogo."
       });

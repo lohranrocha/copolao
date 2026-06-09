@@ -8,7 +8,7 @@ async function buildRanking() {
   const lockedMatchesCount = await prisma.match.count({
     where: {
       status: { not: "CANCELLED" },
-      lockAtUtc: { lte: now }
+      matchDateUtc: { lte: now }
     }
   });
 
@@ -28,10 +28,10 @@ async function buildRanking() {
 
   const ranking = participants.map((user) => {
     const finishedPredictions = user.predictions.filter(
-      (prediction) => prediction.match.status === "FINISHED"
+      (prediction) => prediction.match.status === "FINISHED" && prediction.match.matchDateUtc <= now
     );
     const lockedPredictionsCount = user.predictions.filter(
-      (prediction) => prediction.match.lockAtUtc <= now && prediction.match.status !== "CANCELLED"
+      (prediction) => prediction.match.matchDateUtc <= now && prediction.match.status !== "CANCELLED"
     ).length;
 
     const matchPoints = finishedPredictions.reduce((sum, prediction) => sum + prediction.points, 0);
