@@ -22,6 +22,7 @@ export function AdminPage() {
   const [bonusAnswers, setBonusAnswers] = useState<Record<string, string>>({});
   const [groupResults, setGroupResults] = useState<Record<string, StandingDraft>>({});
   const [message, setMessage] = useState("");
+  const [lastSavedMatchId, setLastSavedMatchId] = useState("");
 
   async function load() {
     const [usersResponse, matchesResponse, invitesResponse, bonusResponse, groupResponse] = await Promise.all([
@@ -68,6 +69,7 @@ export function AdminPage() {
         awayScore
       });
       await load();
+      setLastSavedMatchId(selectedMatchId);
       setMessage("Resultado salvo e pontuação recalculada.");
     } catch (error) {
       setMessage(getApiError(error));
@@ -141,6 +143,14 @@ export function AdminPage() {
   }
 
   const selectedMatch = matches.find((match) => match.id === selectedMatchId);
+  const selectedMatchHasResult = Boolean(selectedMatch && selectedMatch.homeScore !== null && selectedMatch.awayScore !== null);
+  const selectedMatchSavedNow = selectedMatch?.id === lastSavedMatchId;
+
+  useEffect(() => {
+    if (!selectedMatch) return;
+    setHomeScore(selectedMatch.homeScore ?? 0);
+    setAwayScore(selectedMatch.awayScore ?? 0);
+  }, [selectedMatch?.awayScore, selectedMatch?.homeScore, selectedMatch?.id]);
 
   return (
     <section>
@@ -272,27 +282,64 @@ export function AdminPage() {
           </Panel>
         </div>
 
-        <form className="h-fit rounded-lg border border-white/10 bg-felt p-4 text-white shadow-sm" onSubmit={submitResult}>
-          <h2 className="text-lg font-bold">Lançar resultado</h2>
+        <form
+          className={clsx(
+            "h-fit rounded-lg border p-4 text-white shadow-sm transition",
+            selectedMatchSavedNow
+              ? "border-limebet/60 bg-limebet/[0.09] shadow-glow"
+              : selectedMatchHasResult
+                ? "border-limebet/35 bg-[linear-gradient(145deg,rgba(33,247,102,0.09),rgba(18,19,24,1)_42%)]"
+                : "border-white/10 bg-felt"
+          )}
+          onSubmit={submitResult}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-bold">Lançar resultado</h2>
+              <p className="mt-1 text-xs text-steel">Ao trocar o jogo, o placar já lançado aparece automaticamente.</p>
+            </div>
+            <span
+              className={clsx(
+                "shrink-0 rounded-full border px-2.5 py-1 text-xs font-black",
+                selectedMatchHasResult ? "border-limebet/35 bg-limebet/10 text-limebet" : "border-white/10 bg-white/5 text-steel"
+              )}
+            >
+              {selectedMatchHasResult ? "Lançada" : "Pendente"}
+            </span>
+          </div>
           <label className="mt-4 block">
             <span className="text-sm font-medium text-white/80">Jogo</span>
             <select
-              className="mt-1 h-12 w-full rounded-lg border border-white/10 bg-ink px-3 text-sm text-white outline-none focus:border-limebet"
+              className={clsx(
+                "mt-1 h-12 w-full rounded-lg border bg-ink px-3 text-sm text-white outline-none focus:border-limebet",
+                selectedMatchHasResult ? "border-limebet/30" : "border-white/10"
+              )}
               value={selectedMatchId}
               onChange={(event) => setSelectedMatchId(event.target.value)}
             >
               {matches.map((match) => (
                 <option key={match.id} value={match.id}>
+                  {match.homeScore !== null && match.awayScore !== null ? "✓ " : ""}
                   #{match.matchNumber} {match.homeTeam} x {match.awayTeam}
+                  {match.homeScore !== null && match.awayScore !== null ? ` (${match.homeScore}-${match.awayScore})` : ""}
                 </option>
               ))}
             </select>
           </label>
 
           {selectedMatch ? (
-            <p className="mt-2 text-xs text-steel">
-              Grupo {selectedMatch.groupCode} · {formatDateTimeBR(selectedMatch.matchDateUtc)}
-            </p>
+            <div className="mt-3 rounded-lg border border-white/10 bg-ink px-3 py-3 text-xs text-steel">
+              <p>
+                Grupo {selectedMatch.groupCode} · {formatDateTimeBR(selectedMatch.matchDateUtc)}
+              </p>
+              {selectedMatchHasResult ? (
+                <p className="mt-2 font-black text-limebet">
+                  Resultado lançado: {selectedMatch.homeTeam} {selectedMatch.homeScore} x {selectedMatch.awayScore} {selectedMatch.awayTeam}
+                </p>
+              ) : (
+                <p className="mt-2 font-bold text-amber-200">Resultado ainda não lançado.</p>
+              )}
+            </div>
           ) : null}
 
           <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-end gap-3">
@@ -301,9 +348,16 @@ export function AdminPage() {
             <Score label={selectedMatch?.awayTeam ?? "Visitante"} value={awayScore} onChange={setAwayScore} />
           </div>
 
-          <button className="mt-4 h-11 w-full rounded-lg bg-limebet font-black text-ink" type="submit">
-            Salvar resultado
+          <button className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-limebet font-black text-ink" type="submit">
+            {selectedMatchSavedNow ? <CheckCircle2 size={18} /> : null}
+            {selectedMatchHasResult ? "Atualizar resultado" : "Salvar resultado"}
           </button>
+
+          {selectedMatchSavedNow ? (
+            <p className="mt-3 rounded-lg border border-limebet/35 bg-limebet/10 px-3 py-2 text-sm font-bold text-limebet">
+              Partida marcada como lançada e pontuação recalculada.
+            </p>
+          ) : null}
         </form>
       </div>
     </section>
@@ -378,7 +432,7 @@ const standingFields: Array<{ key: keyof StandingDraft; label: string }> = [
 ];
 
 function blankStanding(_teams: string[]): StandingDraft {
-  return emptyStanding;
+  return { ...emptyStanding };
 }
 
 function GroupResultAdminCard({

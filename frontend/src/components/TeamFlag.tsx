@@ -9,13 +9,13 @@ export function TeamFlag({
   label: string;
   size?: "sm" | "md";
 }) {
-  const dimensions = size === "sm" ? "h-7 w-10" : "h-10 w-14";
+  const dimensions = size === "sm" ? "h-8 w-12" : "h-12 w-16";
   const emojiSize = size === "sm" ? "text-[1.8rem]" : "text-[2.4rem]";
 
   if (asset.flagSvg) {
     return (
       <img
-        className={`${dimensions} shrink-0 rounded-[3px] object-cover shadow-[0_0_0_1px_rgba(255,255,255,0.18)]`}
+        className={`${dimensions} shrink-0 rounded-[2px] object-cover shadow-[0_0_0_1px_rgba(255,255,255,0.12)]`}
         src={asset.flagSvg}
         alt={`Bandeira de ${label}`}
       />

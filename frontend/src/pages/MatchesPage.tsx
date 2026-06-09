@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { CalendarClock, Gift, Save, ShieldCheck, Trophy } from "lucide-react";
+import { CalendarClock, CheckCircle2, Gift, GripVertical, Save, ShieldCheck, Trophy, X } from "lucide-react";
 import clsx from "clsx";
 import { MatchCard } from "../components/MatchCard";
 import { TeamFlag } from "../components/TeamFlag";
@@ -257,6 +257,8 @@ function BonusPredictionsPanel() {
   const [standingAnswers, setStandingAnswers] = useState<Record<string, StandingDraft>>({});
   const [activeStandingGroup, setActiveStandingGroup] = useState("");
   const [message, setMessage] = useState("");
+  const [savedBonusQuestionId, setSavedBonusQuestionId] = useState("");
+  const [savedGroupStandings, setSavedGroupStandings] = useState(false);
 
   async function loadBonus() {
     const { data } = await api.get<{ questions: BonusQuestion[]; groupStandings: GroupStandingBonus[] }>("/bonus");
@@ -297,7 +299,9 @@ function BonusPredictionsPanel() {
         answer: answers[questionId] ?? ""
       });
       await loadBonus();
-      setMessage("Palpite bônus salvo.");
+      setSavedBonusQuestionId(questionId);
+      window.setTimeout(() => setSavedBonusQuestionId((current) => (current === questionId ? "" : current)), 2600);
+      setMessage("");
     } catch (error) {
       setMessage(getApiError(error));
     }
@@ -314,19 +318,18 @@ function BonusPredictionsPanel() {
         }))
       });
       await loadBonus();
-      setMessage("Classificação de todos os grupos salva.");
+      setSavedGroupStandings(true);
+      window.setTimeout(() => setSavedGroupStandings(false), 3200);
+      setMessage("");
     } catch (error) {
       setMessage(getApiError(error));
     }
   }
 
-  function updateStanding(groupCode: string, field: keyof StandingDraft, team: string) {
+  function setStanding(groupCode: string, draft: StandingDraft) {
     setStandingAnswers((current) => ({
       ...current,
-      [groupCode]: {
-        ...(current[groupCode] ?? emptyStanding),
-        [field]: team
-      }
+      [groupCode]: draft
     }));
   }
 
@@ -349,15 +352,28 @@ function BonusPredictionsPanel() {
         values={standingAnswers}
         activeGroupCode={activeStandingGroup}
         onActiveGroupChange={setActiveStandingGroup}
-        onChange={updateStanding}
+        onSetStanding={setStanding}
         onSaveAll={saveAllGroupStandings}
+        saved={savedGroupStandings}
       />
 
       <div className="grid gap-4 lg:grid-cols-2">
         {questions.map((question) => {
           const locked = question.computedState !== "OPEN";
+          const hasPrediction = Boolean(question.myPrediction);
+          const savedNow = savedBonusQuestionId === question.id;
           return (
-            <article key={question.id} className="rounded-lg border border-white/10 bg-felt p-4 text-white shadow-sm">
+            <article
+              key={question.id}
+              className={clsx(
+                "rounded-lg border p-4 text-white shadow-sm transition",
+                savedNow
+                  ? "border-limebet/60 bg-limebet/[0.09] shadow-glow"
+                  : hasPrediction
+                    ? "border-limebet/30 bg-[linear-gradient(145deg,rgba(33,247,102,0.08),rgba(18,19,24,1)_38%)]"
+                    : "border-white/10 bg-felt"
+              )}
+            >
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold uppercase text-limebet">{question.points} pts</p>
@@ -365,7 +381,7 @@ function BonusPredictionsPanel() {
                   <p className="mt-1 text-sm leading-6 text-steel">{question.description}</p>
                 </div>
                 <span className={clsx("shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold", locked ? "border-amber-300/25 bg-amber-300/10 text-amber-200" : "border-limebet/25 bg-limebet/10 text-limebet")}>
-                  {bonusStateLabel(question.computedState)}
+                  {savedNow ? "Salvo agora" : hasPrediction ? "Palpite feito" : bonusStateLabel(question.computedState)}
                 </span>
               </div>
 
@@ -395,9 +411,15 @@ function BonusPredictionsPanel() {
                 type="button"
                 onClick={() => saveBonus(question.id)}
               >
-                <Save size={18} />
-                Salvar bônus
+                {savedNow ? <CheckCircle2 size={18} /> : <Save size={18} />}
+                {savedNow ? "Palpite salvo" : question.myPrediction ? "Atualizar bônus" : "Salvar bônus"}
               </button>
+
+              {savedNow ? (
+                <p className="mt-3 rounded-lg border border-limebet/35 bg-limebet/10 px-3 py-2 text-sm font-bold text-limebet">
+                  Seu palpite foi salvo com sucesso.
+                </p>
+              ) : null}
             </article>
           );
         })}
@@ -438,17 +460,20 @@ function GroupStandingPanel({
   values,
   activeGroupCode,
   onActiveGroupChange,
-  onChange,
-  onSaveAll
+  onSetStanding,
+  onSaveAll,
+  saved
 }: {
   groups: GroupStandingBonus[];
   values: Record<string, StandingDraft>;
   activeGroupCode: string;
   onActiveGroupChange: (groupCode: string) => void;
-  onChange: (groupCode: string, field: keyof StandingDraft, team: string) => void;
+  onSetStanding: (groupCode: string, draft: StandingDraft) => void;
   onSaveAll: () => void;
+  saved: boolean;
 }) {
   const activeGroup = groups.find((group) => group.groupCode === activeGroupCode) ?? groups[0];
+  const [draggedTeam, setDraggedTeam] = useState("");
 
   if (!activeGroup) {
     return null;
@@ -456,10 +481,37 @@ function GroupStandingPanel({
 
   const value = values[activeGroup.groupCode] ?? blankStanding(activeGroup.teams);
   const locked = activeGroup.computedState !== "OPEN";
-  const selectedTeams = new Set(Object.values(value).filter(Boolean));
+  const selectedTeams = standingToList(value);
+  const availableTeams = activeGroup.teams.filter((team) => !selectedTeams.includes(team));
   const completedGroups = groups.filter((group) => isStandingComplete(values[group.groupCode])).length;
   const allComplete = groups.length > 0 && completedGroups === groups.length;
   const hasLockedGroup = groups.some((group) => group.computedState !== "OPEN");
+
+  function applyOrder(teams: string[]) {
+    onSetStanding(activeGroup.groupCode, listToStanding(teams));
+  }
+
+  function placeTeam(team: string, index: number) {
+    if (locked || !team) return;
+    const next = selectedTeams.filter((selectedTeam) => selectedTeam !== team);
+    next.splice(index, 0, team);
+    applyOrder(next.slice(0, 4));
+  }
+
+  function removeTeam(team: string) {
+    if (locked) return;
+    applyOrder(selectedTeams.filter((selectedTeam) => selectedTeam !== team));
+  }
+
+  function moveTeam(index: number, delta: number) {
+    if (locked) return;
+    const targetIndex = index + delta;
+    if (targetIndex < 0 || targetIndex >= selectedTeams.length) return;
+    const next = [...selectedTeams];
+    const [team] = next.splice(index, 1);
+    next.splice(targetIndex, 0, team);
+    applyOrder(next);
+  }
 
   return (
     <section className="rounded-lg border border-white/10 bg-felt p-4 text-white shadow-sm">
@@ -483,6 +535,13 @@ function GroupStandingPanel({
           Salvar todos os grupos
         </button>
       </div>
+
+      {saved ? (
+        <div className="mt-4 flex items-start gap-3 rounded-lg border border-limebet/35 bg-limebet/10 px-3 py-3 text-sm font-bold text-limebet">
+          <CheckCircle2 className="mt-0.5 shrink-0" size={18} />
+          Classificação dos grupos salva com sucesso.
+        </div>
+      ) : null}
 
       <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
         {groups.map((group) => {
@@ -520,52 +579,107 @@ function GroupStandingPanel({
           </span>
         </div>
 
-        <div className="mt-4 space-y-2">
-        {standingFields.map((field) => {
-          const currentTeam = value[field.key];
-          return (
-            <label key={field.key} className="grid grid-cols-[72px_1fr] items-center gap-3 rounded-lg bg-ink px-3 py-2">
-              <span className="text-xs font-black text-steel">{field.label}</span>
-              <select
-                className="h-10 rounded-lg border border-white/10 bg-felt px-3 text-sm font-semibold text-white outline-none focus:border-limebet disabled:opacity-70"
-                disabled={locked}
-                value={currentTeam}
-                onChange={(event) => onChange(activeGroup.groupCode, field.key, event.target.value)}
-              >
-                <option value="">Selecionar</option>
-                {activeGroup.teams.map((team) => {
-                  const isUsedElsewhere = selectedTeams.has(team) && currentTeam !== team;
-                  return (
-                    <option key={team} value={team} disabled={isUsedElsewhere}>
-                      {team}
-                    </option>
-                  );
-                })}
-              </select>
-            </label>
-          );
-        })}
-        </div>
+        <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_260px]">
+          <div className="space-y-2">
+            {standingFields.map((field, index) => {
+              const team = selectedTeams[index] ?? "";
+              const asset = team ? getTeamAsset(team) : null;
+              return (
+                <div
+                  key={field.key}
+                  className={clsx(
+                    "grid min-h-[68px] grid-cols-[64px_1fr] items-center gap-3 rounded-lg border px-3 py-2 transition",
+                    team ? "border-limebet/30 bg-limebet/[0.06]" : "border-dashed border-white/15 bg-ink"
+                  )}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={() => {
+                    placeTeam(draggedTeam, index);
+                    setDraggedTeam("");
+                  }}
+                >
+                  <span className="text-sm font-black text-limebet">{field.label}</span>
+                  {team && asset ? (
+                    <div
+                      className="flex min-w-0 items-center gap-3 rounded-lg bg-ink px-2 py-2"
+                      draggable={!locked}
+                      onDragStart={() => setDraggedTeam(team)}
+                    >
+                      <GripVertical className="shrink-0 text-steel" size={17} />
+                      <TeamFlag asset={asset} label={team} size="sm" />
+                      <span className="min-w-0 flex-1 truncate text-sm font-bold">{team}</span>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <button
+                          className="grid h-8 w-8 place-items-center rounded-md border border-white/10 text-xs font-black text-steel disabled:opacity-30"
+                          disabled={locked || index === 0}
+                          type="button"
+                          onClick={() => moveTeam(index, -1)}
+                        >
+                          ↑
+                        </button>
+                        <button
+                          className="grid h-8 w-8 place-items-center rounded-md border border-white/10 text-xs font-black text-steel disabled:opacity-30"
+                          disabled={locked || index === selectedTeams.length - 1}
+                          type="button"
+                          onClick={() => moveTeam(index, 1)}
+                        >
+                          ↓
+                        </button>
+                        <button
+                          aria-label={`Remover ${team}`}
+                          className="grid h-8 w-8 place-items-center rounded-md border border-white/10 text-steel disabled:opacity-30"
+                          disabled={locked}
+                          type="button"
+                          onClick={() => removeTeam(team)}
+                        >
+                          <X size={15} />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="rounded-lg border border-white/10 bg-black/20 px-3 py-3 text-sm font-semibold text-steel">
+                      Arraste uma seleção para esta posição
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
 
-        <div className="mt-3 grid grid-cols-2 gap-2">
-        {activeGroup.teams.map((team) => {
-          const asset = getTeamAsset(team);
-          return (
-            <div key={team} className="flex min-w-0 items-center gap-2 rounded-lg border border-white/10 bg-ink px-2 py-2">
-              <TeamFlag asset={asset} label={team} size="sm" />
-              <span className="truncate text-xs font-semibold text-steel">{team}</span>
+          <div className="rounded-lg border border-white/10 bg-ink p-3">
+            <p className="mb-3 text-xs font-black uppercase text-steel">Seleções disponíveis</p>
+            <div className="space-y-2">
+              {availableTeams.map((team) => {
+                const asset = getTeamAsset(team);
+                return (
+                  <button
+                    key={team}
+                    className="flex w-full items-center gap-2 rounded-lg border border-white/10 bg-felt px-2 py-2 text-left transition hover:border-limebet/40 disabled:opacity-60"
+                    draggable={!locked}
+                    disabled={locked}
+                    type="button"
+                    onClick={() => placeTeam(team, selectedTeams.length)}
+                    onDragStart={() => setDraggedTeam(team)}
+                  >
+                    <TeamFlag asset={asset} label={team} size="sm" />
+                    <span className="min-w-0 flex-1 truncate text-xs font-bold text-white">{team}</span>
+                    <span className="shrink-0 rounded-md bg-limebet px-2 py-1 text-[11px] font-black text-ink">Adicionar</span>
+                  </button>
+                );
+              })}
+              {availableTeams.length === 0 ? (
+                <p className="rounded-lg bg-black/20 px-3 py-3 text-sm font-semibold text-limebet">Grupo completo.</p>
+              ) : null}
             </div>
-          );
-        })}
+          </div>
         </div>
 
-      {activeGroup.result ? (
-        <div className="mt-3 rounded-lg border border-white/10 bg-ink px-3 py-2 text-sm">
-          <span className="text-steel">Pontuação: </span>
-          <strong className="text-limebet">{activeGroup.myPrediction?.points ?? 0} pts</strong>
-          <span className="ml-2 text-xs text-steel">({activeGroup.myPrediction?.correctPositions ?? 0}/4)</span>
-        </div>
-      ) : null}
+        {activeGroup.result ? (
+          <div className="mt-3 rounded-lg border border-white/10 bg-ink px-3 py-2 text-sm">
+            <span className="text-steel">Pontuação: </span>
+            <strong className="text-limebet">{activeGroup.myPrediction?.points ?? 0} pts</strong>
+            <span className="ml-2 text-xs text-steel">({activeGroup.myPrediction?.correctPositions ?? 0}/4)</span>
+          </div>
+        ) : null}
       </article>
 
       {!allComplete ? (
@@ -581,6 +695,20 @@ function isStandingComplete(value?: StandingDraft) {
   if (!value) return false;
   const selectedTeams = new Set(Object.values(value).filter(Boolean));
   return Object.values(value).every(Boolean) && selectedTeams.size === 4;
+}
+
+function standingToList(value?: StandingDraft) {
+  if (!value) return [];
+  return [value.firstTeam, value.secondTeam, value.thirdTeam, value.fourthTeam].filter(Boolean);
+}
+
+function listToStanding(teams: string[]): StandingDraft {
+  return {
+    firstTeam: teams[0] ?? "",
+    secondTeam: teams[1] ?? "",
+    thirdTeam: teams[2] ?? "",
+    fourthTeam: teams[3] ?? ""
+  };
 }
 
 function bonusStateLabel(state: BonusQuestion["computedState"]) {

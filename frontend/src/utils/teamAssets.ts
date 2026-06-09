@@ -8,6 +8,18 @@ function svgDataUri(svg: string) {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
+function flagCdn(code: string) {
+  return `https://flagcdn.com/${code}.svg`;
+}
+
+function teamAsset(code: string, flagCode: string): TeamAsset {
+  return {
+    code,
+    flag: code,
+    flagSvg: flagCdn(flagCode)
+  };
+}
+
 const englandFlag = svgDataUri(`
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 36">
     <rect width="60" height="36" fill="#fff"/>
@@ -24,54 +36,54 @@ const scotlandFlag = svgDataUri(`
 `);
 
 const assets: Record<string, TeamAsset> = {
-  Alemanha: { code: "GER", flag: "🇩🇪" },
-  "África do Sul": { code: "RSA", flag: "🇿🇦" },
-  "Arábia Saudita": { code: "KSA", flag: "🇸🇦" },
-  Argentina: { code: "ARG", flag: "🇦🇷" },
-  Argélia: { code: "ALG", flag: "🇩🇿" },
-  Austrália: { code: "AUS", flag: "🇦🇺" },
-  Áustria: { code: "AUT", flag: "🇦🇹" },
-  Bélgica: { code: "BEL", flag: "🇧🇪" },
-  "Bósnia e Herzegovina": { code: "BIH", flag: "🇧🇦" },
-  Brasil: { code: "BRA", flag: "🇧🇷" },
-  "Cabo Verde": { code: "CPV", flag: "🇨🇻" },
-  Canadá: { code: "CAN", flag: "🇨🇦" },
-  Catar: { code: "QAT", flag: "🇶🇦" },
-  Colômbia: { code: "COL", flag: "🇨🇴" },
-  "Coreia do Sul": { code: "KOR", flag: "🇰🇷" },
-  "Costa do Marfim": { code: "CIV", flag: "🇨🇮" },
-  Croácia: { code: "CRO", flag: "🇭🇷" },
-  Curaçao: { code: "CUW", flag: "🇨🇼" },
-  Egito: { code: "EGY", flag: "🇪🇬" },
-  Equador: { code: "ECU", flag: "🇪🇨" },
+  Alemanha: teamAsset("GER", "de"),
+  "África do Sul": teamAsset("RSA", "za"),
+  "Arábia Saudita": teamAsset("KSA", "sa"),
+  Argentina: teamAsset("ARG", "ar"),
+  Argélia: teamAsset("ALG", "dz"),
+  Austrália: teamAsset("AUS", "au"),
+  Áustria: teamAsset("AUT", "at"),
+  Bélgica: teamAsset("BEL", "be"),
+  "Bósnia e Herzegovina": teamAsset("BIH", "ba"),
+  Brasil: teamAsset("BRA", "br"),
+  "Cabo Verde": teamAsset("CPV", "cv"),
+  Canadá: teamAsset("CAN", "ca"),
+  Catar: teamAsset("QAT", "qa"),
+  Colômbia: teamAsset("COL", "co"),
+  "Coreia do Sul": teamAsset("KOR", "kr"),
+  "Costa do Marfim": teamAsset("CIV", "ci"),
+  Croácia: teamAsset("CRO", "hr"),
+  Curaçao: teamAsset("CUW", "cw"),
+  Egito: teamAsset("EGY", "eg"),
+  Equador: teamAsset("ECU", "ec"),
   Escócia: { code: "SCO", flag: "Escócia", flagSvg: scotlandFlag },
-  Espanha: { code: "ESP", flag: "🇪🇸" },
-  "Estados Unidos": { code: "USA", flag: "🇺🇸" },
-  França: { code: "FRA", flag: "🇫🇷" },
-  Gana: { code: "GHA", flag: "🇬🇭" },
-  Haiti: { code: "HAI", flag: "🇭🇹" },
-  Holanda: { code: "NED", flag: "🇳🇱" },
+  Espanha: teamAsset("ESP", "es"),
+  "Estados Unidos": teamAsset("USA", "us"),
+  França: teamAsset("FRA", "fr"),
+  Gana: teamAsset("GHA", "gh"),
+  Haiti: teamAsset("HAI", "ht"),
+  Holanda: teamAsset("NED", "nl"),
   Inglaterra: { code: "ENG", flag: "Inglaterra", flagSvg: englandFlag },
-  Irã: { code: "IRN", flag: "🇮🇷" },
-  Iraque: { code: "IRQ", flag: "🇮🇶" },
-  Japão: { code: "JPN", flag: "🇯🇵" },
-  Jordânia: { code: "JOR", flag: "🇯🇴" },
-  Marrocos: { code: "MAR", flag: "🇲🇦" },
-  México: { code: "MEX", flag: "🇲🇽" },
-  Noruega: { code: "NOR", flag: "🇳🇴" },
-  "Nova Zelândia": { code: "NZL", flag: "🇳🇿" },
-  Panamá: { code: "PAN", flag: "🇵🇦" },
-  Paraguai: { code: "PAR", flag: "🇵🇾" },
-  Portugal: { code: "POR", flag: "🇵🇹" },
-  "RD Congo": { code: "COD", flag: "🇨🇩" },
-  Senegal: { code: "SEN", flag: "🇸🇳" },
-  Suécia: { code: "SWE", flag: "🇸🇪" },
-  Suíça: { code: "SUI", flag: "🇨🇭" },
-  Tchéquia: { code: "CZE", flag: "🇨🇿" },
-  Tunísia: { code: "TUN", flag: "🇹🇳" },
-  Turquia: { code: "TUR", flag: "🇹🇷" },
-  Uruguai: { code: "URU", flag: "🇺🇾" },
-  Uzbequistão: { code: "UZB", flag: "🇺🇿" }
+  Irã: teamAsset("IRN", "ir"),
+  Iraque: teamAsset("IRQ", "iq"),
+  Japão: teamAsset("JPN", "jp"),
+  Jordânia: teamAsset("JOR", "jo"),
+  Marrocos: teamAsset("MAR", "ma"),
+  México: teamAsset("MEX", "mx"),
+  Noruega: teamAsset("NOR", "no"),
+  "Nova Zelândia": teamAsset("NZL", "nz"),
+  Panamá: teamAsset("PAN", "pa"),
+  Paraguai: teamAsset("PAR", "py"),
+  Portugal: teamAsset("POR", "pt"),
+  "RD Congo": teamAsset("COD", "cd"),
+  Senegal: teamAsset("SEN", "sn"),
+  Suécia: teamAsset("SWE", "se"),
+  Suíça: teamAsset("SUI", "ch"),
+  Tchéquia: teamAsset("CZE", "cz"),
+  Tunísia: teamAsset("TUN", "tn"),
+  Turquia: teamAsset("TUR", "tr"),
+  Uruguai: teamAsset("URU", "uy"),
+  Uzbequistão: teamAsset("UZB", "uz")
 };
 
 export function getTeamAsset(teamName: string) {
