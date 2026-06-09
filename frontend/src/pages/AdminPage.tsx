@@ -1,13 +1,15 @@
 import { FormEvent, useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { CheckCircle2, Gift, Power, RotateCcw, Save, Ticket, UsersRound, type LucideIcon } from "lucide-react";
+import { CheckCircle2, Gift, Power, RotateCcw, Save, Ticket, Trash2, UsersRound, type LucideIcon } from "lucide-react";
 import clsx from "clsx";
 import { PageHeader } from "../components/PageHeader";
+import { useAuth } from "../api/auth";
 import { api, getApiError } from "../api/client";
 import type { AdminBonusQuestion, AdminGroupStanding, InviteCode, Match, User } from "../types/domain";
 import { formatDateTimeBR } from "../utils/date";
 
 export function AdminPage() {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [inviteCodes, setInviteCodes] = useState<InviteCode[]>([]);
@@ -128,6 +130,21 @@ export function AdminPage() {
     }
   }
 
+  async function deleteUser(user: User) {
+    const displayName = user.nickname || user.name;
+    const confirmed = window.confirm(`Excluir o usuario ${displayName}? Os palpites e bônus dele também serão removidos.`);
+    if (!confirmed) return;
+
+    setMessage("");
+    try {
+      await api.delete(`/users/${user.id}`);
+      await load();
+      setMessage(`Usuario ${displayName} excluido.`);
+    } catch (error) {
+      setMessage(getApiError(error));
+    }
+  }
+
   async function saveBonusResult(questionId: string) {
     setMessage("");
     try {
@@ -184,12 +201,21 @@ export function AdminPage() {
           <Panel title="Participantes" icon={UsersRound}>
             <div className="space-y-2">
               {users.map((user) => (
-                <div key={user.id} className="flex items-center justify-between gap-3 rounded-lg bg-ink px-3 py-2 text-sm">
+                <div key={user.id} className="grid gap-3 rounded-lg bg-ink px-3 py-2 text-sm md:grid-cols-[1fr_auto_auto] md:items-center">
                   <div className="min-w-0">
                     <p className="truncate font-semibold">{user.nickname || user.name}</p>
                     <p className="truncate text-xs text-steel">{user.email}</p>
                   </div>
                   <span className="shrink-0 rounded-full bg-limebet/10 px-2 py-1 text-xs font-semibold text-limebet">{user.role}</span>
+                  <button
+                    className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-rose-300/25 px-3 text-xs font-bold text-rose-200 transition hover:border-rose-300/45 hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-40"
+                    disabled={user.id === currentUser?.id}
+                    type="button"
+                    onClick={() => deleteUser(user)}
+                  >
+                    <Trash2 size={15} />
+                    Excluir
+                  </button>
                 </div>
               ))}
             </div>
