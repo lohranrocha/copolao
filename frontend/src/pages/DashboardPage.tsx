@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { BookOpenCheck, Eye, Gift, ListOrdered, Medal, Trophy } from "lucide-react";
+import { BookOpenCheck, Eye, Gift, ListOrdered, Medal, MessageCircle, Trophy } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { StatCard } from "../components/StatCard";
 import { api } from "../api/client";
 import { useAuth } from "../api/auth";
 import type { BonusQuestion, GroupStandingBonus, Match, RankingEntry } from "../types/domain";
 import { formatDateTimeBR } from "../utils/date";
+import whatsappGroupQr from "../assets/whatsapp-group-qr.svg";
+
+const WHATSAPP_GROUP_URL = "https://chat.whatsapp.com/F2kU4K3YZ9NKtw1qsvWX3F?s=cl&p=i&ilr=1";
 
 type BonusOverview = {
   questions: BonusQuestion[];
@@ -45,6 +48,8 @@ export function DashboardPage() {
         ) : null}
       />
 
+      <WhatsAppGroupInvite />
+
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatCard label="Posicao" value={myRank ? `${myRank.position}o` : "-"} />
         <StatCard label="Pontos" value={myRank?.totalPoints ?? 0} />
@@ -73,6 +78,38 @@ export function DashboardPage() {
             </Link>
           ))}
           {nextMatches.length === 0 ? <p className="text-sm text-steel">Nenhum jogo aberto no momento.</p> : null}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function WhatsAppGroupInvite() {
+  return (
+    <section className="mb-6 overflow-hidden rounded-lg border border-emerald-300/20 bg-[#08140d] shadow-sm">
+      <div className="grid gap-4 p-4 md:grid-cols-[1fr_auto] md:items-center md:p-5">
+        <div className="flex items-start gap-3">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-[#25D366] text-ink shadow-glow">
+            <MessageCircle size={22} />
+          </div>
+          <div>
+            <h2 className="text-lg font-black text-white">Entre no grupo do Copolão</h2>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-steel">
+              Use a camera do WhatsApp para escanear o QR code e entrar no grupo oficial. É por lá que vamos avisar sobre prazos, resultados lançados e recados importantes do bolão.
+            </p>
+            <a
+              className="mt-4 inline-flex h-11 items-center justify-center rounded-lg bg-[#25D366] px-4 text-sm font-black text-ink transition hover:brightness-110"
+              href={WHATSAPP_GROUP_URL}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Entrar no grupo
+            </a>
+          </div>
+        </div>
+
+        <div className="mx-auto w-full max-w-[220px] rounded-lg bg-white p-3 md:w-[180px]">
+          <img className="h-auto w-full rounded-md" src={whatsappGroupQr} alt="QR code do grupo do Copolão no WhatsApp" />
         </div>
       </div>
     </section>
