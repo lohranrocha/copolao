@@ -43,7 +43,8 @@ async function buildRanking() {
       user: {
         id: user.id,
         name: user.name,
-        nickname: user.nickname
+        nickname: user.nickname,
+        avatarUrl: user.avatarUrl
       },
       totalPoints: matchPoints + bonusPoints,
       matchPoints,

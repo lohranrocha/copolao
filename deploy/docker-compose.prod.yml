@@ -33,6 +33,9 @@ services:
       ASAAS_API_URL: ${ASAAS_API_URL}
       ASAAS_API_KEY: ${ASAAS_API_KEY}
       ASAAS_WEBHOOK_TOKEN: ${ASAAS_WEBHOOK_TOKEN}
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      - uploads_data:/app/uploads
 
   web:
     build:
@@ -57,5 +60,6 @@ services:
 
 volumes:
   postgres_data:
+  uploads_data:
   caddy_data:
   caddy_config:

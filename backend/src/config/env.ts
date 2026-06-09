@@ -14,7 +14,8 @@ const envSchema = z.object({
   MERCADO_PAGO_ACCESS_TOKEN: z.string().optional(),
   MERCADO_PAGO_PUBLIC_KEY: z.string().optional(),
   MERCADO_PAGO_WEBHOOK_SECRET: z.string().optional(),
-  PUBLIC_API_URL: z.string().url().optional()
+  PUBLIC_API_URL: z.string().url().optional(),
+  UPLOAD_DIR: z.string().default("uploads")
 });
 
 export const env = envSchema.parse(process.env);

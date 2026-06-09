@@ -1,6 +1,10 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
+import multipart from "@fastify/multipart";
+import { createReadStream } from "node:fs";
+import { access } from "node:fs/promises";
+import path from "node:path";
 import { ZodError } from "zod";
 import { env } from "./config/env.js";
 import { adminRoutes } from "./modules/admin/admin.routes.js";
@@ -39,7 +43,34 @@ export async function buildServer() {
     secret: env.JWT_SECRET
   });
 
+  await app.register(multipart, {
+    limits: {
+      files: 1,
+      fileSize: 3 * 1024 * 1024
+    }
+  });
+
   app.get("/api/health", async () => ({ ok: true }));
+  app.get<{ Params: { filename: string } }>("/uploads/avatars/:filename", async (request, reply) => {
+    const { filename } = request.params;
+
+    if (!/^[a-zA-Z0-9-]+\.webp$/.test(filename)) {
+      return reply.status(404).send({ message: "Arquivo nao encontrado." });
+    }
+
+    const filePath = path.join(env.UPLOAD_DIR, "avatars", filename);
+    try {
+      await access(filePath);
+    } catch {
+      return reply.status(404).send({ message: "Arquivo nao encontrado." });
+    }
+
+    return reply
+      .type("image/webp")
+      .header("Cache-Control", "public, max-age=31536000, immutable")
+      .send(createReadStream(filePath));
+  });
+
   await app.register(authRoutes, { prefix: "/api/auth" });
   await app.register(adminRoutes, { prefix: "/api/admin" });
   await app.register(bonusRoutes, { prefix: "/api/bonus" });

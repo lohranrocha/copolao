@@ -2,6 +2,7 @@ import { NavLink, Outlet } from "react-router-dom";
 import { BarChart3, CalendarDays, ClipboardList, Home, ListChecks, LogOut, Rows3, Shield, UserRound, type LucideIcon } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "../api/auth";
+import { UserAvatar } from "./UserAvatar";
 import copolaoLogo from "../assets/copolao-logo-transparent.png";
 
 const baseItems = [
@@ -31,14 +32,17 @@ export function AppLayout() {
               <p className="truncate text-xs text-steel">{user?.nickname || user?.name}</p>
             </div>
           </NavLink>
-          <button
-            className="grid h-10 w-10 place-items-center rounded-lg border border-white/10 bg-felt text-white/75 transition hover:border-limebet/50 hover:text-limebet"
-            type="button"
-            title="Sair"
-            onClick={logout}
-          >
-            <LogOut size={18} />
-          </button>
+          <div className="flex items-center gap-2">
+            <UserAvatar avatarUrl={user?.avatarUrl} name={user?.nickname || user?.name || "Participante"} size="sm" className="hidden sm:grid" />
+            <button
+              className="grid h-10 w-10 place-items-center rounded-lg border border-white/10 bg-felt text-white/75 transition hover:border-limebet/50 hover:text-limebet"
+              type="button"
+              title="Sair"
+              onClick={logout}
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
         </div>
       </header>
 

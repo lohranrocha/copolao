@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { CheckCircle2, Gift, Power, RotateCcw, Save, Ticket, Trash2, UsersRound, type LucideIcon } from "lucide-react";
 import clsx from "clsx";
 import { PageHeader } from "../components/PageHeader";
+import { UserAvatar } from "../components/UserAvatar";
 import { useAuth } from "../api/auth";
 import { api, getApiError } from "../api/client";
 import type { AdminBonusQuestion, AdminGroupStanding, InviteCode, Match, User } from "../types/domain";
@@ -202,9 +203,12 @@ export function AdminPage() {
             <div className="space-y-2">
               {users.map((user) => (
                 <div key={user.id} className="grid gap-3 rounded-lg bg-ink px-3 py-2 text-sm md:grid-cols-[1fr_auto_auto] md:items-center">
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold">{user.nickname || user.name}</p>
-                    <p className="truncate text-xs text-steel">{user.email}</p>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <UserAvatar avatarUrl={user.avatarUrl} name={user.nickname || user.name} size="sm" />
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold">{user.nickname || user.name}</p>
+                      <p className="truncate text-xs text-steel">{user.email}</p>
+                    </div>
                   </div>
                   <span className="shrink-0 rounded-full bg-limebet/10 px-2 py-1 text-xs font-semibold text-limebet">{user.role}</span>
                   <button

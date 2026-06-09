@@ -7,6 +7,7 @@ export type User = {
   name: string;
   nickname: string | null;
   email: string;
+  avatarUrl?: string | null;
   role: UserRole;
   acceptedInviteCode?: string | null;
 };
@@ -49,6 +50,7 @@ export type RankingEntry = {
     id: string;
     name: string;
     nickname: string | null;
+    avatarUrl?: string | null;
   };
   totalPoints: number;
   matchPoints: number;
@@ -156,6 +158,7 @@ export type PredictionBoardParticipant = {
   id: string;
   name: string;
   nickname: string | null;
+  avatarUrl?: string | null;
 };
 
 export type PredictionBoardPrediction = {

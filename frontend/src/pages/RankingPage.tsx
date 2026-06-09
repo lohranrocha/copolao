@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Medal, Trophy } from "lucide-react";
 import clsx from "clsx";
 import { PageHeader } from "../components/PageHeader";
+import { UserAvatar } from "../components/UserAvatar";
 import { api } from "../api/client";
 import type { RankingEntry } from "../types/domain";
 
@@ -20,9 +21,12 @@ export function RankingPage() {
         {ranking.slice(0, 3).map((entry) => (
           <article key={entry.user.id} className={clsx("rounded-lg border p-4 text-white shadow-sm", podiumTone(entry.position))}>
             <div className="flex items-center justify-between gap-3">
-              <div>
+              <div className="flex min-w-0 items-center gap-3">
+                <UserAvatar avatarUrl={entry.user.avatarUrl} name={entry.user.nickname || entry.user.name} size="md" />
+                <div className="min-w-0">
                 <p className="text-xs font-black uppercase text-steel">{entry.position}º colocado</p>
                 <h2 className="mt-1 truncate text-lg font-black">{entry.user.nickname || entry.user.name}</h2>
+                </div>
               </div>
               <div className="grid h-11 w-11 place-items-center rounded-lg bg-limebet text-ink">
                 {entry.position === 1 ? <Trophy size={21} /> : <Medal size={21} />}
@@ -59,11 +63,14 @@ export function RankingPage() {
               <div className={clsx("grid h-8 w-8 place-items-center rounded-md text-xs font-black", positionTone(entry.position))}>
                 {entry.position}
               </div>
-              <div className="min-w-0">
-                <p className="truncate font-black">{entry.user.nickname || entry.user.name}</p>
-                <p className="truncate text-[11px] font-semibold text-steel">
-                  Jogos {entry.matchPoints} pts · {entry.missedPredictions} sem palpite
-                </p>
+              <div className="flex min-w-0 items-center gap-3">
+                <UserAvatar avatarUrl={entry.user.avatarUrl} name={entry.user.nickname || entry.user.name} size="sm" />
+                <div className="min-w-0">
+                  <p className="truncate font-black">{entry.user.nickname || entry.user.name}</p>
+                  <p className="truncate text-[11px] font-semibold text-steel">
+                    Jogos {entry.matchPoints} pts · {entry.missedPredictions} sem palpite
+                  </p>
+                </div>
               </div>
               <strong className="text-right text-base text-limebet">{entry.totalPoints}</strong>
               <span className="text-right font-bold text-white/85">{entry.exactScores}</span>

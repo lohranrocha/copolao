@@ -48,6 +48,7 @@ model User {
   nickname           String?      @db.VarChar(80)
   email              String       @unique @db.VarChar(150)
   passwordHash       String       @map("password_hash") @db.VarChar(255)
+  avatarUrl          String?      @map("avatar_url") @db.Text
   role               UserRole     @default(PARTICIPANT)
   acceptedInviteCode String?      @map("accepted_invite_code") @db.VarChar(60)
   createdAt          DateTime     @default(now()) @map("created_at")

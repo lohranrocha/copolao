@@ -34,3 +34,12 @@ export function getApiError(error: unknown) {
   }
   return "Nao foi possivel concluir a acao.";
 }
+
+export function getPublicAssetUrl(path: string | null | undefined) {
+  if (!path) return null;
+  if (/^https?:\/\//.test(path)) return path;
+
+  const apiBaseUrl = api.defaults.baseURL ?? "http://localhost:3333/api";
+  const publicBaseUrl = apiBaseUrl.replace(/\/api\/?$/, "");
+  return `${publicBaseUrl}${path.startsWith("/") ? path : `/${path}`}`;
+}

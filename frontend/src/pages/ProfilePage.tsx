@@ -1,9 +1,10 @@
 import { FormEvent, useState } from "react";
-import { KeyRound, Save, UserRound } from "lucide-react";
+import { Camera, KeyRound, Save } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { api, getApiError } from "../api/client";
 import { useAuth } from "../api/auth";
 import type { User } from "../types/domain";
+import { UserAvatar } from "../components/UserAvatar";
 
 export function ProfilePage() {
   const { user, updateUser } = useAuth();
@@ -12,6 +13,8 @@ export function ProfilePage() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [avatarMessage, setAvatarMessage] = useState("");
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -33,18 +36,64 @@ export function ProfilePage() {
     }
   }
 
+  async function uploadAvatar(file: File | undefined) {
+    if (!file) return;
+
+    setAvatarMessage("");
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setAvatarMessage("Use uma imagem JPG, PNG ou WebP.");
+      return;
+    }
+
+    if (file.size > 3 * 1024 * 1024) {
+      setAvatarMessage("A imagem deve ter no maximo 3 MB.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("avatar", file);
+
+    setAvatarUploading(true);
+    try {
+      const { data } = await api.post<{ user: User }>("/users/me/avatar", formData);
+      updateUser(data.user);
+      setAvatarMessage("Foto atualizada.");
+    } catch (error) {
+      setAvatarMessage(getApiError(error));
+    } finally {
+      setAvatarUploading(false);
+    }
+  }
+
   return (
     <section>
       <PageHeader title="Perfil" description="Ajuste seus dados de participante e sua senha de acesso." />
 
       <form className="rounded-lg border border-white/10 bg-felt p-4 text-white shadow-sm" onSubmit={submit}>
-        <div className="mb-4 flex items-center gap-3">
-          <div className="grid h-11 w-11 place-items-center rounded-lg bg-limebet text-ink">
-            <UserRound size={22} />
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            <UserAvatar avatarUrl={user?.avatarUrl} name={user?.nickname || user?.name || "Participante"} size="lg" />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold">{user?.email}</p>
+              <p className="text-xs uppercase text-steel">{user?.role}</p>
+            </div>
           </div>
           <div className="min-w-0">
-            <p className="truncate text-sm font-bold">{user?.email}</p>
-            <p className="text-xs uppercase text-steel">{user?.role}</p>
+            <label className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-lg border border-white/10 bg-ink px-4 text-sm font-bold text-white transition hover:border-limebet/45 hover:text-limebet">
+              <Camera size={17} />
+              {avatarUploading ? "Enviando..." : "Trocar foto"}
+              <input
+                className="sr-only"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                disabled={avatarUploading}
+                onChange={(event) => {
+                  void uploadAvatar(event.target.files?.[0]);
+                  event.target.value = "";
+                }}
+              />
+            </label>
+            {avatarMessage ? <p className="mt-2 text-xs font-semibold text-limebet">{avatarMessage}</p> : null}
           </div>
         </div>
 

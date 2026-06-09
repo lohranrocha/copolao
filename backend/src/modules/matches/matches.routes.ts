@@ -69,7 +69,8 @@ export async function matchesRoutes(app: FastifyInstance) {
           select: {
             id: true,
             name: true,
-            nickname: true
+            nickname: true,
+            avatarUrl: true
           }
         }
       }

@@ -3,6 +3,7 @@ import { Eye, EyeOff, Lock } from "lucide-react";
 import clsx from "clsx";
 import { PageHeader } from "../components/PageHeader";
 import { TeamFlag } from "../components/TeamFlag";
+import { UserAvatar } from "../components/UserAvatar";
 import { useAuth } from "../api/auth";
 import { api } from "../api/client";
 import type { PredictionBoardMatch, PredictionBoardParticipant } from "../types/domain";
@@ -117,9 +118,12 @@ function PredictionBoardCard({
           const prediction = predictionsByUser.get(participant.id);
           return (
             <div key={participant.id} className="grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-3">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-bold">{participant.nickname || participant.name}</p>
-                <p className="text-xs text-steel">{shouldMaskParticipant ? "Oculto até o início" : prediction ? predictionLabel(prediction.hidden) : "Sem palpite"}</p>
+              <div className="flex min-w-0 items-center gap-3">
+                <UserAvatar avatarUrl={participant.avatarUrl} name={participant.nickname || participant.name} size="sm" />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold">{participant.nickname || participant.name}</p>
+                  <p className="text-xs text-steel">{shouldMaskParticipant ? "Oculto até o início" : prediction ? predictionLabel(prediction.hidden) : "Sem palpite"}</p>
+                </div>
               </div>
               <PredictionValue masked={shouldMaskParticipant} prediction={prediction} />
             </div>

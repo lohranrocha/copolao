@@ -1,6 +1,10 @@
 import type { FastifyInstance } from "fastify";
 import bcrypt from "bcryptjs";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
+import path from "node:path";
+import sharp from "sharp";
 import { z } from "zod";
+import { env } from "../../config/env.js";
 import { requireAdmin, requireAuth } from "../../utils/http.js";
 import { prisma } from "../../plugins/prisma.js";
 
@@ -15,19 +19,38 @@ const userParamsSchema = z.object({
   userId: z.string().uuid()
 });
 
+const userSelect = {
+  id: true,
+  name: true,
+  nickname: true,
+  email: true,
+  avatarUrl: true,
+  role: true,
+  acceptedInviteCode: true,
+  createdAt: true
+} as const;
+
+const allowedAvatarTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+const avatarFileNamePattern = /^[a-zA-Z0-9-]+\.webp$/;
+
+function getStoredAvatarFileName(avatarUrl: string | null) {
+  if (!avatarUrl) return null;
+  const filename = avatarUrl.split("/").pop();
+  return filename && avatarFileNamePattern.test(filename) ? filename : null;
+}
+
+async function removeStoredAvatar(avatarUrl: string | null) {
+  const filename = getStoredAvatarFileName(avatarUrl);
+  if (!filename) return;
+
+  await unlink(path.join(env.UPLOAD_DIR, "avatars", filename)).catch(() => undefined);
+}
+
 export async function usersRoutes(app: FastifyInstance) {
   app.get("/me", { preHandler: requireAuth }, async (request) => {
     const user = await prisma.user.findUniqueOrThrow({
       where: { id: request.user.sub },
-      select: {
-        id: true,
-        name: true,
-        nickname: true,
-        email: true,
-        role: true,
-        acceptedInviteCode: true,
-        createdAt: true
-      }
+      select: userSelect
     });
 
     return { user };
@@ -58,16 +81,62 @@ export async function usersRoutes(app: FastifyInstance) {
         nickname: body.nickname || null,
         ...(body.newPassword ? { passwordHash: await bcrypt.hash(body.newPassword, 10) } : {})
       },
-      select: {
-        id: true,
-        name: true,
-        nickname: true,
-        email: true,
-        role: true,
-        acceptedInviteCode: true,
-        createdAt: true
-      }
+      select: userSelect
     });
+
+    return { user: updatedUser };
+  });
+
+  app.post("/me/avatar", { preHandler: requireAuth }, async (request, reply) => {
+    const upload = await request.file();
+
+    if (!upload) {
+      return reply.status(400).send({ message: "Envie uma imagem para atualizar sua foto." });
+    }
+
+    if (!allowedAvatarTypes.has(upload.mimetype)) {
+      return reply.status(400).send({ message: "Use uma imagem JPG, PNG ou WebP." });
+    }
+
+    let inputBuffer: Buffer;
+    try {
+      inputBuffer = await upload.toBuffer();
+    } catch (error) {
+      if (error instanceof Error && "code" in error && error.code === "FST_REQ_FILE_TOO_LARGE") {
+        return reply.status(400).send({ message: "A imagem deve ter no maximo 3 MB." });
+      }
+      throw error;
+    }
+
+    let avatarBuffer: Buffer;
+    try {
+      avatarBuffer = await sharp(inputBuffer)
+        .rotate()
+        .resize(320, 320, { fit: "cover" })
+        .webp({ quality: 82 })
+        .toBuffer();
+    } catch {
+      return reply.status(400).send({ message: "Nao foi possivel processar esta imagem." });
+    }
+
+    const currentUser = await prisma.user.findUniqueOrThrow({
+      where: { id: request.user.sub },
+      select: { avatarUrl: true }
+    });
+
+    const avatarDir = path.join(env.UPLOAD_DIR, "avatars");
+    await mkdir(avatarDir, { recursive: true });
+
+    const filename = `${request.user.sub}-${Date.now()}.webp`;
+    await writeFile(path.join(avatarDir, filename), avatarBuffer);
+
+    const updatedUser = await prisma.user.update({
+      where: { id: request.user.sub },
+      data: { avatarUrl: `/uploads/avatars/${filename}` },
+      select: userSelect
+    });
+
+    await removeStoredAvatar(currentUser.avatarUrl);
 
     return { user: updatedUser };
   });
@@ -75,15 +144,7 @@ export async function usersRoutes(app: FastifyInstance) {
   app.get("/", { preHandler: requireAdmin }, async () => {
     const users = await prisma.user.findMany({
       orderBy: [{ role: "asc" }, { name: "asc" }],
-      select: {
-        id: true,
-        name: true,
-        nickname: true,
-        email: true,
-        role: true,
-        acceptedInviteCode: true,
-        createdAt: true
-      }
+      select: userSelect
     });
 
     return { users };
@@ -100,7 +161,8 @@ export async function usersRoutes(app: FastifyInstance) {
       where: { id: userId },
       select: {
         id: true,
-        acceptedInviteCode: true
+        acceptedInviteCode: true,
+        avatarUrl: true
       }
     });
 
@@ -125,6 +187,8 @@ export async function usersRoutes(app: FastifyInstance) {
         }
       }
     });
+
+    await removeStoredAvatar(user.avatarUrl);
 
     return reply.status(204).send();
   });
