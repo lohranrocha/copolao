@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { CheckCircle2, Gift, Power, Save, Ticket, UsersRound, type LucideIcon } from "lucide-react";
+import { CheckCircle2, Gift, Power, RotateCcw, Save, Ticket, UsersRound, type LucideIcon } from "lucide-react";
 import clsx from "clsx";
 import { PageHeader } from "../components/PageHeader";
 import { api, getApiError } from "../api/client";
@@ -23,6 +23,7 @@ export function AdminPage() {
   const [groupResults, setGroupResults] = useState<Record<string, StandingDraft>>({});
   const [message, setMessage] = useState("");
   const [lastSavedMatchId, setLastSavedMatchId] = useState("");
+  const [lastCancelledMatchId, setLastCancelledMatchId] = useState("");
 
   async function load() {
     const [usersResponse, matchesResponse, invitesResponse, bonusResponse, groupResponse] = await Promise.all([
@@ -70,7 +71,26 @@ export function AdminPage() {
       });
       await load();
       setLastSavedMatchId(selectedMatchId);
+      setLastCancelledMatchId("");
       setMessage("Resultado salvo e pontuação recalculada.");
+    } catch (error) {
+      setMessage(getApiError(error));
+    }
+  }
+
+  async function cancelResult() {
+    if (!selectedMatch) return;
+
+    const confirmed = window.confirm(`Cancelar o lançamento de ${selectedMatch.homeTeam} x ${selectedMatch.awayTeam}?`);
+    if (!confirmed) return;
+
+    setMessage("");
+    try {
+      await api.delete(`/matches/${selectedMatch.id}/result`);
+      await load();
+      setLastSavedMatchId("");
+      setLastCancelledMatchId(selectedMatch.id);
+      setMessage("Lançamento cancelado e pontuação deste jogo zerada.");
     } catch (error) {
       setMessage(getApiError(error));
     }
@@ -145,6 +165,7 @@ export function AdminPage() {
   const selectedMatch = matches.find((match) => match.id === selectedMatchId);
   const selectedMatchHasResult = Boolean(selectedMatch && selectedMatch.homeScore !== null && selectedMatch.awayScore !== null);
   const selectedMatchSavedNow = selectedMatch?.id === lastSavedMatchId;
+  const selectedMatchCancelledNow = selectedMatch?.id === lastCancelledMatchId;
 
   useEffect(() => {
     if (!selectedMatch) return;
@@ -287,9 +308,11 @@ export function AdminPage() {
             "h-fit rounded-lg border p-4 text-white shadow-sm transition",
             selectedMatchSavedNow
               ? "border-limebet/60 bg-limebet/[0.09] shadow-glow"
-              : selectedMatchHasResult
-                ? "border-limebet/35 bg-[linear-gradient(145deg,rgba(33,247,102,0.09),rgba(18,19,24,1)_42%)]"
-                : "border-white/10 bg-felt"
+              : selectedMatchCancelledNow
+                ? "border-amber-300/45 bg-amber-300/[0.08]"
+                : selectedMatchHasResult
+                  ? "border-limebet/35 bg-[linear-gradient(145deg,rgba(33,247,102,0.09),rgba(18,19,24,1)_42%)]"
+                  : "border-white/10 bg-felt"
           )}
           onSubmit={submitResult}
         >
@@ -348,14 +371,33 @@ export function AdminPage() {
             <Score label={selectedMatch?.awayTeam ?? "Visitante"} value={awayScore} onChange={setAwayScore} />
           </div>
 
-          <button className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-limebet font-black text-ink" type="submit">
-            {selectedMatchSavedNow ? <CheckCircle2 size={18} /> : null}
-            {selectedMatchHasResult ? "Atualizar resultado" : "Salvar resultado"}
-          </button>
+          <div className="mt-4 grid gap-2">
+            <button className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-limebet font-black text-ink" type="submit">
+              {selectedMatchSavedNow ? <CheckCircle2 size={18} /> : null}
+              {selectedMatchHasResult ? "Atualizar resultado" : "Salvar resultado"}
+            </button>
+
+            {selectedMatchHasResult ? (
+              <button
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-rose-300/30 bg-rose-500/10 font-black text-rose-200 transition hover:border-rose-300/50 hover:bg-rose-500/15"
+                type="button"
+                onClick={cancelResult}
+              >
+                <RotateCcw size={18} />
+                Cancelar lançamento
+              </button>
+            ) : null}
+          </div>
 
           {selectedMatchSavedNow ? (
             <p className="mt-3 rounded-lg border border-limebet/35 bg-limebet/10 px-3 py-2 text-sm font-bold text-limebet">
               Partida marcada como lançada e pontuação recalculada.
+            </p>
+          ) : null}
+
+          {selectedMatchCancelledNow ? (
+            <p className="mt-3 rounded-lg border border-amber-300/25 bg-amber-300/10 px-3 py-2 text-sm font-bold text-amber-100">
+              Lançamento cancelado. A partida voltou para pendente.
             </p>
           ) : null}
         </form>

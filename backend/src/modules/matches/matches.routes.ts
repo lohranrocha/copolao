@@ -127,4 +127,46 @@ export async function matchesRoutes(app: FastifyInstance) {
       }
     };
   });
+
+  app.delete("/:matchId/result", { preHandler: requireAdmin }, async (request, reply) => {
+    const { matchId } = paramsSchema.parse(request.params);
+
+    const match = await prisma.match.findUnique({ where: { id: matchId } });
+    if (!match) {
+      return reply.status(404).send({ message: "Jogo nao encontrado." });
+    }
+
+    if (match.homeScore === null || match.awayScore === null) {
+      return reply.status(400).send({ message: "Este jogo ainda nao tem resultado lancado." });
+    }
+
+    const updatedMatch = await prisma.$transaction(async (tx) => {
+      const savedMatch = await tx.match.update({
+        where: { id: matchId },
+        data: {
+          homeScore: null,
+          awayScore: null,
+          status: "SCHEDULED"
+        }
+      });
+
+      await tx.prediction.updateMany({
+        where: { matchId },
+        data: {
+          points: 0,
+          isExactScore: false,
+          isCorrectResult: false
+        }
+      });
+
+      return savedMatch;
+    });
+
+    return {
+      match: {
+        ...updatedMatch,
+        computedState: getComputedMatchState(updatedMatch)
+      }
+    };
+  });
 }
