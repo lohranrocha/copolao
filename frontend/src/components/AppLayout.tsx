@@ -46,7 +46,7 @@ export function AppLayout() {
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-6xl grid-cols-1 md:grid-cols-[220px_1fr]">
+      <div className="mx-auto grid w-full max-w-[1360px] grid-cols-1 md:grid-cols-[220px_minmax(0,1fr)_220px]">
         <aside className="hidden min-h-[calc(100vh-65px)] border-r border-white/10 bg-ink p-3 md:block">
           <nav className="space-y-1">
             {items.map((item) => (
@@ -58,6 +58,8 @@ export function AppLayout() {
         <main className="px-4 pb-24 pt-5 md:px-6 md:pb-8">
           <Outlet />
         </main>
+
+        <div className="hidden md:block" aria-hidden="true" />
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-ink px-2 py-2 shadow-soft md:hidden">
