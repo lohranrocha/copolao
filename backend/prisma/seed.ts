@@ -101,8 +101,8 @@ const bonusQuestions = [
 // Initial group-stage schedule based on FIFA's official calendar page and
 // cross-checked with FourFourTwo's fixture list updated on 2026-04-08.
 const fixtures: FixtureSeed[] = [
-  { matchNumber: 1, groupCode: "A", homeTeam: "Mexico", awayTeam: "South Africa", venue: "Estadio Azteca", city: "Mexico City", matchDateUtc: "2026-06-11T18:00:00.000Z" },
-  { matchNumber: 2, groupCode: "A", homeTeam: "South Korea", awayTeam: "Czechia", venue: "Estadio Akron", city: "Zapopan", matchDateUtc: "2026-06-12T01:00:00.000Z" },
+  { matchNumber: 1, groupCode: "A", homeTeam: "Mexico", awayTeam: "South Africa", venue: "Estadio Azteca", city: "Mexico City", matchDateUtc: "2026-06-11T19:00:00.000Z" },
+  { matchNumber: 2, groupCode: "A", homeTeam: "South Korea", awayTeam: "Czechia", venue: "Estadio Akron", city: "Zapopan", matchDateUtc: "2026-06-12T02:00:00.000Z" },
   { matchNumber: 3, groupCode: "B", homeTeam: "Canada", awayTeam: "Bosnia and Herzegovina", venue: "BMO Field", city: "Toronto", matchDateUtc: "2026-06-12T19:00:00.000Z" },
   { matchNumber: 4, groupCode: "D", homeTeam: "United States", awayTeam: "Paraguay", venue: "SoFi Stadium", city: "Inglewood", matchDateUtc: "2026-06-13T01:00:00.000Z" },
   { matchNumber: 5, groupCode: "B", homeTeam: "Qatar", awayTeam: "Switzerland", venue: "Levi's Stadium", city: "Santa Clara", matchDateUtc: "2026-06-13T19:00:00.000Z" },
