@@ -180,6 +180,15 @@ model BonusPrediction {
   @@map("bonus_predictions")
 }
 
+model BonusControl {
+  key       String   @id @db.VarChar(80)
+  lockAtUtc DateTime @map("lock_at_utc")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("bonus_controls")
+}
+
 model GroupStandingPrediction {
   id               String   @id @default(uuid()) @db.Uuid
   userId           String   @map("user_id") @db.Uuid

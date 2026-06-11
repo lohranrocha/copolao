@@ -7,6 +7,7 @@ import {
   getGroupLockAt,
   getGroupStandingState,
   getGroupTeams,
+  groupStandingBonusControlKey,
   validateStandingTeams
 } from "../../utils/groupStandings.js";
 
@@ -39,7 +40,7 @@ const groupPredictionsSchema = z.object({
 
 export async function bonusRoutes(app: FastifyInstance) {
   app.get("/", { preHandler: requireAuth }, async (request) => {
-    const [questions, groupMatches, groupPredictions, groupResults] = await Promise.all([
+    const [questions, groupMatches, groupPredictions, groupResults, groupControl] = await Promise.all([
       prisma.bonusQuestion.findMany({
         where: { isActive: true },
         orderBy: [{ lockAtUtc: "asc" }, { title: "asc" }],
@@ -66,7 +67,8 @@ export async function bonusRoutes(app: FastifyInstance) {
       prisma.groupStandingPrediction.findMany({
         where: { userId: request.user.sub }
       }),
-      prisma.groupStandingResult.findMany()
+      prisma.groupStandingResult.findMany(),
+      prisma.bonusControl.findUnique({ where: { key: groupStandingBonusControlKey } })
     ]);
 
     const predictionByGroup = new Map(groupPredictions.map((prediction) => [prediction.groupCode, prediction]));
@@ -90,7 +92,7 @@ export async function bonusRoutes(app: FastifyInstance) {
         myPrediction: question.predictions[0] ?? null
       })),
       groupStandings: Array.from(matchesByGroup.entries()).map(([groupCode, matches]) => {
-        const lockAtUtc = getGroupLockAt(matches) ?? new Date();
+        const lockAtUtc = getGroupLockAt(matches, groupControl?.lockAtUtc) ?? new Date();
         const result = resultByGroup.get(groupCode);
 
         return {
@@ -133,9 +135,12 @@ export async function bonusRoutes(app: FastifyInstance) {
       return reply.status(400).send({ message: "Preencha a classificacao de todos os grupos antes de salvar." });
     }
 
-    const results = await prisma.groupStandingResult.findMany({
-      where: { groupCode: { in: expectedGroupCodes } }
-    });
+    const [results, groupControl] = await Promise.all([
+      prisma.groupStandingResult.findMany({
+        where: { groupCode: { in: expectedGroupCodes } }
+      }),
+      prisma.bonusControl.findUnique({ where: { key: groupStandingBonusControlKey } })
+    ]);
     const resultByGroup = new Map(results.map((result) => [result.groupCode, result]));
 
     for (const group of body.groups) {
@@ -148,7 +153,7 @@ export async function bonusRoutes(app: FastifyInstance) {
         return reply.status(400).send({ message: `Escolha os quatro times do Grupo ${group.groupCode} sem repetir.` });
       }
 
-      const lockAtUtc = getGroupLockAt(groupMatches) ?? new Date();
+      const lockAtUtc = getGroupLockAt(groupMatches, groupControl?.lockAtUtc) ?? new Date();
       if (getGroupStandingState(lockAtUtc, Boolean(resultByGroup.get(group.groupCode))) !== "OPEN") {
         return reply.status(400).send({ message: `Os palpites de classificacao do Grupo ${group.groupCode} ja foram fechados.` });
       }
@@ -203,8 +208,11 @@ export async function bonusRoutes(app: FastifyInstance) {
       return reply.status(400).send({ message: "Escolha os quatro times do grupo sem repetir." });
     }
 
-    const lockAtUtc = getGroupLockAt(matches) ?? new Date();
-    const result = await prisma.groupStandingResult.findUnique({ where: { groupCode } });
+    const [result, groupControl] = await Promise.all([
+      prisma.groupStandingResult.findUnique({ where: { groupCode } }),
+      prisma.bonusControl.findUnique({ where: { key: groupStandingBonusControlKey } })
+    ]);
+    const lockAtUtc = getGroupLockAt(matches, groupControl?.lockAtUtc) ?? new Date();
 
     if (getGroupStandingState(lockAtUtc, Boolean(result)) !== "OPEN") {
       return reply.status(400).send({ message: "Os palpites de classificacao deste grupo ja foram fechados." });

@@ -40,4 +40,10 @@ describe("getGroupLockAt", () => {
 
     expect(lockAt?.toISOString()).toBe("2026-06-12T18:30:00.000Z");
   });
+
+  it("uses the admin bonus window when one is configured", () => {
+    const lockAt = getGroupLockAt([makeMatch({})], new Date("2026-06-15T18:30:00.000Z"));
+
+    expect(lockAt?.toISOString()).toBe("2026-06-15T18:30:00.000Z");
+  });
 });

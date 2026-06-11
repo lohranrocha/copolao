@@ -11,13 +11,17 @@ export type GroupStandingInput = {
 
 const minGroupStandingLockAtUtc = new Date("2026-06-11T18:30:00.000Z");
 
+export const groupStandingBonusControlKey = "GROUP_STANDINGS";
+
 export function getGroupTeams(matches: Match[]) {
   return Array.from(new Set(matches.flatMap((match) => [match.homeTeam, match.awayTeam]))).sort((a, b) =>
     a.localeCompare(b, "pt-BR")
   );
 }
 
-export function getGroupLockAt(matches: Match[]) {
+export function getGroupLockAt(matches: Match[], overrideLockAtUtc?: Date | null) {
+  if (overrideLockAtUtc) return overrideLockAtUtc;
+
   const earliestLockAt = matches.reduce<Date | null>((earliest, match) => {
     if (!earliest || match.lockAtUtc < earliest) return match.lockAtUtc;
     return earliest;

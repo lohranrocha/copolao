@@ -8,6 +8,7 @@ import {
   getGroupLockAt,
   getGroupStandingState,
   getGroupTeams,
+  groupStandingBonusControlKey,
   validateStandingTeams
 } from "../../utils/groupStandings.js";
 
@@ -37,6 +38,16 @@ const createBonusQuestionSchema = z.object({
 const bonusResultSchema = z.object({
   correctAnswer: z.string().trim().min(1).max(120)
 });
+
+const bonusWindowSchema = z.discriminatedUnion("mode", [
+  z.object({
+    mode: z.literal("OPEN"),
+    lockAtUtc: z.string().datetime()
+  }),
+  z.object({
+    mode: z.literal("CLOSE")
+  })
+]);
 
 const groupParamsSchema = z.object({
   groupCode: z.string().trim().min(1).max(2).transform((value) => value.toUpperCase())
@@ -186,8 +197,44 @@ export async function adminRoutes(app: FastifyInstance) {
     };
   });
 
+  app.patch("/bonus-window", { preHandler: requireAdmin }, async (request, reply) => {
+    const body = bonusWindowSchema.parse(request.body);
+    const lockAtUtc = body.mode === "OPEN" ? new Date(body.lockAtUtc) : new Date();
+
+    if (body.mode === "OPEN" && lockAtUtc <= new Date()) {
+      return reply.status(400).send({ message: "Informe uma data futura para reabrir os bônus." });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      const questions = await tx.bonusQuestion.updateMany({
+        where: {
+          isActive: true,
+          correctAnswer: null
+        },
+        data: { lockAtUtc }
+      });
+
+      const groupControl = await tx.bonusControl.upsert({
+        where: { key: groupStandingBonusControlKey },
+        create: {
+          key: groupStandingBonusControlKey,
+          lockAtUtc
+        },
+        update: { lockAtUtc }
+      });
+
+      return { questionsUpdated: questions.count, groupControl };
+    });
+
+    return {
+      lockAtUtc: result.groupControl.lockAtUtc,
+      questionsUpdated: result.questionsUpdated,
+      message: body.mode === "OPEN" ? "Bônus reabertos." : "Bônus fechados."
+    };
+  });
+
   app.get("/group-standings", { preHandler: requireAdmin }, async () => {
-    const [groupMatches, predictions, results] = await Promise.all([
+    const [groupMatches, predictions, results, groupControl] = await Promise.all([
       prisma.match.findMany({
         where: {
           stage: "GROUP_STAGE",
@@ -196,7 +243,8 @@ export async function adminRoutes(app: FastifyInstance) {
         orderBy: [{ groupCode: "asc" }, { matchDateUtc: "asc" }]
       }),
       prisma.groupStandingPrediction.findMany(),
-      prisma.groupStandingResult.findMany()
+      prisma.groupStandingResult.findMany(),
+      prisma.bonusControl.findUnique({ where: { key: groupStandingBonusControlKey } })
     ]);
 
     const matchesByGroup = new Map<string, typeof groupMatches>();
@@ -213,7 +261,7 @@ export async function adminRoutes(app: FastifyInstance) {
 
     return {
       groups: Array.from(matchesByGroup.entries()).map(([groupCode, matches]) => {
-        const lockAtUtc = getGroupLockAt(matches) ?? new Date();
+        const lockAtUtc = getGroupLockAt(matches, groupControl?.lockAtUtc) ?? new Date();
         const result = resultByGroup.get(groupCode);
 
         return {

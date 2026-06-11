@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { CheckCircle2, Gift, Power, RotateCcw, Save, Ticket, Trash2, UsersRound, type LucideIcon } from "lucide-react";
+import { CalendarClock, CheckCircle2, Gift, Power, RotateCcw, Save, Ticket, Trash2, UsersRound, type LucideIcon } from "lucide-react";
 import clsx from "clsx";
 import { PageHeader } from "../components/PageHeader";
 import { UserAvatar } from "../components/UserAvatar";
@@ -23,6 +23,8 @@ export function AdminPage() {
   const [inviteLabel, setInviteLabel] = useState("");
   const [inviteMaxUses, setInviteMaxUses] = useState("1");
   const [bonusAnswers, setBonusAnswers] = useState<Record<string, string>>({});
+  const [bonusWindowInput, setBonusWindowInput] = useState("");
+  const [savingBonusWindow, setSavingBonusWindow] = useState(false);
   const [groupResults, setGroupResults] = useState<Record<string, StandingDraft>>({});
   const [message, setMessage] = useState("");
   const [lastSavedMatchId, setLastSavedMatchId] = useState("");
@@ -41,6 +43,7 @@ export function AdminPage() {
     setInviteCodes(invitesResponse.data.inviteCodes);
     setBonusQuestions(bonusResponse.data.questions);
     setGroupStandings(groupResponse.data.groups);
+    setBonusWindowInput(getBonusWindowInputValue(bonusResponse.data.questions, groupResponse.data.groups));
     setBonusAnswers(Object.fromEntries(bonusResponse.data.questions.map((question) => [question.id, question.correctAnswer ?? ""])));
     setGroupResults(
       Object.fromEntries(
@@ -156,6 +159,50 @@ export function AdminPage() {
       setMessage("Bônus apurado e ranking atualizado.");
     } catch (error) {
       setMessage(getApiError(error));
+    }
+  }
+
+  async function openBonusWindow(event: FormEvent) {
+    event.preventDefault();
+    setMessage("");
+
+    const lockAtUtc = new Date(bonusWindowInput);
+    if (Number.isNaN(lockAtUtc.getTime())) {
+      setMessage("Informe uma data válida para reabrir os bônus.");
+      return;
+    }
+
+    setSavingBonusWindow(true);
+    try {
+      await api.patch("/admin/bonus-window", {
+        mode: "OPEN",
+        lockAtUtc: lockAtUtc.toISOString()
+      });
+      await load();
+      setMessage("Bônus reabertos até a data informada.");
+    } catch (error) {
+      setMessage(getApiError(error));
+    } finally {
+      setSavingBonusWindow(false);
+    }
+  }
+
+  async function closeBonusWindow() {
+    const confirmed = window.confirm("Fechar todos os bônus agora? Ninguém conseguirá enviar ou editar bônus depois disso.");
+    if (!confirmed) return;
+
+    setMessage("");
+    setSavingBonusWindow(true);
+    try {
+      await api.patch("/admin/bonus-window", {
+        mode: "CLOSE"
+      });
+      await load();
+      setMessage("Bônus fechados.");
+    } catch (error) {
+      setMessage(getApiError(error));
+    } finally {
+      setSavingBonusWindow(false);
     }
   }
 
@@ -282,6 +329,41 @@ export function AdminPage() {
                 </div>
               ))}
             </div>
+          </Panel>
+
+          <Panel title="Controle dos bônus" icon={CalendarClock}>
+            <form className="grid gap-3 md:grid-cols-[1fr_auto_auto]" onSubmit={openBonusWindow}>
+              <label className="min-w-0">
+                <span className="mb-1 block text-xs font-bold uppercase text-steel">Abrir até</span>
+                <input
+                  className="h-11 w-full rounded-lg border border-white/10 bg-ink px-3 text-sm text-white outline-none focus:border-limebet"
+                  type="datetime-local"
+                  value={bonusWindowInput}
+                  onChange={(event) => setBonusWindowInput(event.target.value)}
+                  required
+                />
+              </label>
+              <button
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-limebet px-4 text-sm font-black text-ink md:self-end"
+                disabled={savingBonusWindow}
+                type="submit"
+              >
+                <Save size={17} />
+                Reabrir
+              </button>
+              <button
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-amber-300/30 bg-amber-300/10 px-4 text-sm font-black text-amber-100 transition hover:border-amber-300/50 md:self-end"
+                disabled={savingBonusWindow}
+                type="button"
+                onClick={closeBonusWindow}
+              >
+                <Power size={17} />
+                Fechar agora
+              </button>
+            </form>
+            <p className="mt-3 text-xs leading-5 text-steel">
+              Esse controle altera as perguntas bônus ainda não apuradas e a ordem final dos grupos. Use horário do Brasil.
+            </p>
           </Panel>
 
           <Panel title="Apurar bônus" icon={Gift}>
@@ -505,6 +587,30 @@ const standingFields: Array<{ key: keyof StandingDraft; label: string }> = [
 
 function blankStanding(_teams: string[]): StandingDraft {
   return { ...emptyStanding };
+}
+
+function getBonusWindowInputValue(questions: AdminBonusQuestion[], groups: AdminGroupStanding[]) {
+  const dates = [
+    ...questions.filter((question) => question.computedState !== "SETTLED").map((question) => question.lockAtUtc),
+    ...groups.filter((group) => group.computedState !== "SETTLED").map((group) => group.lockAtUtc)
+  ];
+
+  const latestDate = dates.reduce<Date | null>((latest, date) => {
+    const parsedDate = new Date(date);
+    if (!latest || parsedDate > latest) return parsedDate;
+    return latest;
+  }, null);
+
+  return toDateTimeLocalInput(latestDate ?? new Date(Date.now() + 60 * 60 * 1000));
+}
+
+function toDateTimeLocalInput(date: Date) {
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return [
+    date.getFullYear(),
+    pad(date.getMonth() + 1),
+    pad(date.getDate())
+  ].join("-") + `T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 function GroupResultAdminCard({
