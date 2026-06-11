@@ -73,7 +73,7 @@ function lockAtUtc(matchDateUtc: string) {
   return new Date(new Date(matchDateUtc).getTime() - 30 * 60 * 1000);
 }
 
-const bonusLockAtUtc = new Date("2026-06-11T17:00:00.000Z");
+const bonusLockAtUtc = new Date("2026-06-11T18:30:00.000Z");
 
 const bonusQuestions = [
   {

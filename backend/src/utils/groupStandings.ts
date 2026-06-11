@@ -9,6 +9,8 @@ export type GroupStandingInput = {
   fourthTeam: string;
 };
 
+const minGroupStandingLockAtUtc = new Date("2026-06-11T18:30:00.000Z");
+
 export function getGroupTeams(matches: Match[]) {
   return Array.from(new Set(matches.flatMap((match) => [match.homeTeam, match.awayTeam]))).sort((a, b) =>
     a.localeCompare(b, "pt-BR")
@@ -16,10 +18,13 @@ export function getGroupTeams(matches: Match[]) {
 }
 
 export function getGroupLockAt(matches: Match[]) {
-  return matches.reduce<Date | null>((earliest, match) => {
+  const earliestLockAt = matches.reduce<Date | null>((earliest, match) => {
     if (!earliest || match.lockAtUtc < earliest) return match.lockAtUtc;
     return earliest;
   }, null);
+
+  if (!earliestLockAt) return null;
+  return earliestLockAt < minGroupStandingLockAtUtc ? minGroupStandingLockAtUtc : earliestLockAt;
 }
 
 export function getGroupStandingState(lockAtUtc: Date, hasResult: boolean, now = new Date()): GroupStandingState {
