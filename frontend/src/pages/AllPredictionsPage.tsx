@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Eye, EyeOff, Lock } from "lucide-react";
+import { ChevronDown, ChevronUp, Eye, EyeOff, Lock, UsersRound } from "lucide-react";
 import clsx from "clsx";
 import { PageHeader } from "../components/PageHeader";
 import { TeamFlag } from "../components/TeamFlag";
@@ -21,6 +21,7 @@ export function AllPredictionsPage() {
   const [participants, setParticipants] = useState<PredictionBoardParticipant[]>([]);
   const [matches, setMatches] = useState<PredictionBoardMatch[]>([]);
   const [group, setGroup] = useState("ALL");
+  const [expandedMatches, setExpandedMatches] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     void api.get<BoardResponse>("/predictions/board").then(({ data }) => {
@@ -34,6 +35,19 @@ export function AllPredictionsPage() {
     [matches]
   );
   const visibleMatches = group === "ALL" ? matches : matches.filter((match) => match.groupCode === group);
+  const sections = useMemo(() => buildMatchSections(visibleMatches), [visibleMatches]);
+
+  function toggleMatch(matchId: string) {
+    setExpandedMatches((current) => {
+      const next = new Set(current);
+      if (next.has(matchId)) {
+        next.delete(matchId);
+      } else {
+        next.add(matchId);
+      }
+      return next;
+    });
+  }
 
   return (
     <section>
@@ -58,9 +72,23 @@ export function AllPredictionsPage() {
         ))}
       </div>
 
-      <div className="space-y-4">
-        {visibleMatches.map((match) => (
-          <PredictionBoardCard key={match.id} match={match} participants={participants} currentUserId={user?.id ?? null} />
+      <div className="space-y-6">
+        {sections.map((section) => (
+          <div key={section.title}>
+            <h2 className="mb-3 text-sm font-black uppercase tracking-wide text-white/75">{section.title}</h2>
+            <div className="space-y-4">
+              {section.matches.map((match) => (
+                <PredictionBoardCard
+                  key={match.id}
+                  match={match}
+                  participants={participants}
+                  currentUserId={user?.id ?? null}
+                  expanded={expandedMatches.has(match.id)}
+                  onToggle={() => toggleMatch(match.id)}
+                />
+              ))}
+            </div>
+          </div>
         ))}
       </div>
 
@@ -72,15 +100,22 @@ export function AllPredictionsPage() {
 function PredictionBoardCard({
   match,
   participants,
-  currentUserId
+  currentUserId,
+  expanded,
+  onToggle
 }: {
   match: PredictionBoardMatch;
   participants: PredictionBoardParticipant[];
   currentUserId: string | null;
+  expanded: boolean;
+  onToggle: () => void;
 }) {
   const homeAsset = getTeamAsset(match.homeTeam);
   const awayAsset = getTeamAsset(match.awayTeam);
   const predictionsByUser = new Map(match.predictions.map((prediction) => [prediction.userId, prediction]));
+  const ownParticipant = participants.find((participant) => participant.id === currentUserId);
+  const visibleParticipants = expanded ? participants : ownParticipant ? [ownParticipant] : [];
+  const hiddenParticipantsCount = Math.max(participants.length - visibleParticipants.length, 0);
 
   return (
     <article className="overflow-hidden rounded-lg border border-white/10 bg-felt text-white shadow-sm">
@@ -106,13 +141,24 @@ function PredictionBoardCard({
         </span>
       </div>
 
-      <div className="flex items-center gap-2 border-b border-white/10 px-4 py-3 text-xs font-semibold text-steel">
-        {match.viewerCanSeePredictions ? <Eye size={15} className="text-limebet" /> : <EyeOff size={15} className="text-amber-300" />}
-        {visibilityLabel(match)}
+      <div className="flex flex-col gap-3 border-b border-white/10 px-4 py-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-2 text-xs font-semibold text-steel">
+          {match.viewerCanSeePredictions ? <Eye size={15} className="text-limebet" /> : <EyeOff size={15} className="text-amber-300" />}
+          {visibilityLabel(match)}
+        </div>
+        <button
+          className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-white/10 bg-ink px-3 text-xs font-black text-white transition hover:border-limebet/45 hover:bg-limebet/10"
+          type="button"
+          onClick={onToggle}
+        >
+          <UsersRound size={15} />
+          {expanded ? "Ocultar outros" : `Mostrar todos${hiddenParticipantsCount ? ` (${hiddenParticipantsCount})` : ""}`}
+          {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+        </button>
       </div>
 
       <div className="divide-y divide-white/10">
-        {participants.map((participant) => {
+        {visibleParticipants.map((participant) => {
           const isOwnParticipant = participant.id === currentUserId;
           const shouldMaskParticipant = !match.isPublic && !isOwnParticipant;
           const prediction = predictionsByUser.get(participant.id);
@@ -130,6 +176,12 @@ function PredictionBoardCard({
           );
         })}
       </div>
+
+      {!expanded && hiddenParticipantsCount > 0 ? (
+        <div className="border-t border-white/10 bg-white/[0.02] px-4 py-3 text-xs font-semibold text-steel">
+          {hiddenParticipantsCount} participante(s) oculto(s) nesta partida. Toque em “Mostrar todos” para abrir a lista.
+        </div>
+      ) : null}
 
       {participants.length === 0 ? <p className="px-4 py-4 text-sm text-steel">Nenhum participante cadastrado ainda.</p> : null}
     </article>
@@ -179,4 +231,41 @@ function visibilityLabel(match: PredictionBoardMatch) {
 
 function predictionLabel(hidden: boolean) {
   return hidden ? "Enviado, mas ainda bloqueado" : "Palpite enviado";
+}
+
+function buildMatchSections(matches: PredictionBoardMatch[]) {
+  const sortedMatches = [...matches].sort(compareMatchesByDayPriority);
+  const todayMatches = sortedMatches.filter((match) => isTodayInBrazil(match.matchDateUtc));
+  const otherMatches = sortedMatches.filter((match) => !isTodayInBrazil(match.matchDateUtc));
+
+  if (todayMatches.length === 0) {
+    return [{ title: "Jogos", matches: sortedMatches }];
+  }
+
+  return [
+    { title: "Jogos de hoje", matches: todayMatches },
+    ...(otherMatches.length > 0 ? [{ title: "Outros jogos", matches: otherMatches }] : [])
+  ];
+}
+
+function compareMatchesByDayPriority(a: PredictionBoardMatch, b: PredictionBoardMatch) {
+  const aIsToday = isTodayInBrazil(a.matchDateUtc);
+  const bIsToday = isTodayInBrazil(b.matchDateUtc);
+
+  if (aIsToday !== bIsToday) return aIsToday ? -1 : 1;
+
+  return new Date(a.matchDateUtc).getTime() - new Date(b.matchDateUtc).getTime() || a.matchNumber - b.matchNumber;
+}
+
+function isTodayInBrazil(date: string) {
+  return getBrazilDateKey(date) === getBrazilDateKey(new Date());
+}
+
+function getBrazilDateKey(date: string | Date) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(new Date(date));
 }
