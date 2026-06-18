@@ -39,6 +39,9 @@ export function LoginPage() {
         <button className="h-12 w-full rounded-lg bg-limebet font-black text-ink shadow-glow" disabled={loading}>
           {loading ? "Entrando..." : "Entrar"}
         </button>
+        <p className="text-center text-xs leading-5 text-steel">
+          Esqueceu sua senha? Peça ao administrador um link seguro de redefinição.
+        </p>
         <p className="text-center text-sm text-steel">
           Nao tem conta?{" "}
           <Link className="font-semibold text-limebet" to="/cadastro">

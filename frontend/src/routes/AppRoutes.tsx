@@ -10,6 +10,7 @@ import { MatchesPage } from "../pages/MatchesPage";
 import { MyPredictionsPage } from "../pages/MyPredictionsPage";
 import { ProfilePage } from "../pages/ProfilePage";
 import { RankingPage } from "../pages/RankingPage";
+import { ResetPasswordPage } from "../pages/ResetPasswordPage";
 import { RulesPage } from "../pages/RulesPage";
 
 export function AppRoutes() {
@@ -18,6 +19,7 @@ export function AppRoutes() {
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/cadastro" element={<RegisterPage />} />
+      <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />

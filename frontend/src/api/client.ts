@@ -19,7 +19,7 @@ api.interceptors.response.use(
       localStorage.removeItem("bolao.token");
       localStorage.removeItem("bolao.user");
 
-      if (!["/login", "/cadastro"].includes(window.location.pathname)) {
+      if (!["/login", "/cadastro", "/redefinir-senha"].includes(window.location.pathname)) {
         window.location.assign("/login");
       }
     }

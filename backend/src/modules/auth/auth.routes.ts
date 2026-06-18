@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "../../plugins/prisma.js";
+import { hashPasswordResetToken } from "../../utils/passwordReset.js";
 
 const loginSchema = z.object({
   email: z.string().trim().email().transform((value) => value.toLowerCase()),
@@ -14,6 +15,11 @@ const registerSchema = z.object({
   email: z.string().trim().email().max(150).transform((value) => value.toLowerCase()),
   password: z.string().min(6).max(100),
   inviteCode: z.string().trim().min(3).max(60).transform((value) => value.toUpperCase())
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().trim().length(64),
+  password: z.string().min(6).max(100)
 });
 
 export async function authRoutes(app: FastifyInstance) {
@@ -71,7 +77,7 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.status(400).send({ message: "Codigo de convite esgotado." });
     }
 
-    const token = app.jwt.sign({ sub: user.id, role: user.role });
+    const token = app.jwt.sign({ sub: user.id, role: user.role, authVersion: user.authVersion });
 
     return reply.status(201).send({
       token,
@@ -99,7 +105,7 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.status(401).send({ message: "E-mail ou senha invalidos." });
     }
 
-    const token = app.jwt.sign({ sub: user.id, role: user.role });
+    const token = app.jwt.sign({ sub: user.id, role: user.role, authVersion: user.authVersion });
 
     return {
       token,
@@ -112,5 +118,65 @@ export async function authRoutes(app: FastifyInstance) {
         role: user.role
       }
     };
+  });
+
+  app.post("/password-reset", async (request, reply) => {
+    const body = resetPasswordSchema.parse(request.body);
+    const now = new Date();
+    const tokenHash = hashPasswordResetToken(body.token);
+
+    const resetToken = await prisma.passwordResetToken.findUnique({
+      where: { tokenHash },
+      select: {
+        id: true,
+        userId: true,
+        expiresAt: true,
+        usedAt: true
+      }
+    });
+
+    if (!resetToken || resetToken.usedAt || resetToken.expiresAt <= now) {
+      return reply.status(400).send({ message: "Este link de redefinicao e invalido ou expirou." });
+    }
+
+    const passwordHash = await bcrypt.hash(body.password, 10);
+    const passwordChanged = await prisma.$transaction(async (tx) => {
+      const claimedToken = await tx.passwordResetToken.updateMany({
+        where: {
+          id: resetToken.id,
+          usedAt: null,
+          expiresAt: { gt: now }
+        },
+        data: { usedAt: now }
+      });
+
+      if (claimedToken.count !== 1) {
+        return false;
+      }
+
+      await tx.user.update({
+        where: { id: resetToken.userId },
+        data: {
+          passwordHash,
+          authVersion: { increment: 1 }
+        }
+      });
+
+      await tx.passwordResetToken.updateMany({
+        where: {
+          userId: resetToken.userId,
+          usedAt: null
+        },
+        data: { usedAt: now }
+      });
+
+      return true;
+    });
+
+    if (!passwordChanged) {
+      return reply.status(400).send({ message: "Este link de redefinicao e invalido ou expirou." });
+    }
+
+    return { message: "Senha redefinida com sucesso." };
   });
 }

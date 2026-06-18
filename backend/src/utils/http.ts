@@ -8,12 +8,15 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
     return reply.status(401).send({ message: "Autenticacao obrigatoria." });
   }
 
-  const userExists = await prisma.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { id: request.user.sub },
-    select: { id: true }
+    select: {
+      id: true,
+      authVersion: true
+    }
   });
 
-  if (!userExists) {
+  if (!user || (request.user.authVersion ?? 0) !== user.authVersion) {
     return reply.status(401).send({ message: "Sessao expirada. Faca login novamente." });
   }
 }

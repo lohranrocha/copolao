@@ -403,7 +403,7 @@ export async function paymentAuthPayload(payment: Payment, app: FastifyInstance)
   if (payment.status !== "PAID") return null;
 
   const user = await activatePaidSignup(payment);
-  const token = app.jwt.sign({ sub: user.id, role: user.role });
+  const token = app.jwt.sign({ sub: user.id, role: user.role, authVersion: user.authVersion });
 
   return {
     token,

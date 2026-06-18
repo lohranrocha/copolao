@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { CalendarClock, CheckCircle2, Gift, Power, RotateCcw, Save, Ticket, Trash2, UsersRound, type LucideIcon } from "lucide-react";
+import { CalendarClock, Check, CheckCircle2, Copy, Gift, KeyRound, Power, RotateCcw, Save, Ticket, Trash2, UsersRound, type LucideIcon } from "lucide-react";
 import clsx from "clsx";
 import { PageHeader } from "../components/PageHeader";
 import { UserAvatar } from "../components/UserAvatar";
@@ -29,6 +29,10 @@ export function AdminPage() {
   const [message, setMessage] = useState("");
   const [lastSavedMatchId, setLastSavedMatchId] = useState("");
   const [lastCancelledMatchId, setLastCancelledMatchId] = useState("");
+  const [generatingResetUserId, setGeneratingResetUserId] = useState("");
+  const [resetLink, setResetLink] = useState("");
+  const [resetLinkUserName, setResetLinkUserName] = useState("");
+  const [resetLinkCopied, setResetLinkCopied] = useState(false);
 
   async function load() {
     const [usersResponse, matchesResponse, invitesResponse, bonusResponse, groupResponse] = await Promise.all([
@@ -149,6 +153,43 @@ export function AdminPage() {
     }
   }
 
+  async function generatePasswordReset(user: User) {
+    const displayName = user.nickname || user.name;
+    setMessage("");
+    setGeneratingResetUserId(user.id);
+    setResetLinkCopied(false);
+
+    try {
+      const { data } = await api.post<{ resetUrl: string }>(`/users/${user.id}/password-reset`);
+      setResetLink(data.resetUrl);
+      setResetLinkUserName(displayName);
+
+      try {
+        await navigator.clipboard.writeText(data.resetUrl);
+        setResetLinkCopied(true);
+        setMessage(`Link de redefinição de ${displayName} copiado. Ele vale por 30 minutos.`);
+      } catch {
+        setMessage(`Link de redefinição de ${displayName} gerado. Ele vale por 30 minutos.`);
+      }
+    } catch (error) {
+      setMessage(getApiError(error));
+    } finally {
+      setGeneratingResetUserId("");
+    }
+  }
+
+  async function copyResetLink() {
+    if (!resetLink) return;
+
+    try {
+      await navigator.clipboard.writeText(resetLink);
+      setResetLinkCopied(true);
+      setMessage("Link de redefinição copiado.");
+    } catch {
+      setMessage("Não foi possível copiar automaticamente. Selecione o link abaixo.");
+    }
+  }
+
   async function saveBonusResult(questionId: string) {
     setMessage("");
     try {
@@ -249,7 +290,7 @@ export function AdminPage() {
           <Panel title="Participantes" icon={UsersRound}>
             <div className="space-y-2">
               {users.map((user) => (
-                <div key={user.id} className="grid gap-3 rounded-lg bg-ink px-3 py-2 text-sm md:grid-cols-[1fr_auto_auto] md:items-center">
+                <div key={user.id} className="grid gap-3 rounded-lg bg-ink px-3 py-2 text-sm md:grid-cols-[1fr_auto_auto_auto] md:items-center">
                   <div className="flex min-w-0 items-center gap-3">
                     <UserAvatar avatarUrl={user.avatarUrl} name={user.nickname || user.name} size="sm" />
                     <div className="min-w-0">
@@ -258,6 +299,15 @@ export function AdminPage() {
                     </div>
                   </div>
                   <span className="shrink-0 rounded-full bg-limebet/10 px-2 py-1 text-xs font-semibold text-limebet">{user.role}</span>
+                  <button
+                    className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-limebet/25 px-3 text-xs font-bold text-limebet transition hover:border-limebet/50 hover:bg-limebet/10 disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={generatingResetUserId === user.id}
+                    type="button"
+                    onClick={() => generatePasswordReset(user)}
+                  >
+                    <KeyRound size={15} />
+                    {generatingResetUserId === user.id ? "Gerando..." : "Gerar link"}
+                  </button>
                   <button
                     className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-rose-300/25 px-3 text-xs font-bold text-rose-200 transition hover:border-rose-300/45 hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-40"
                     disabled={user.id === currentUser?.id}
@@ -270,6 +320,32 @@ export function AdminPage() {
                 </div>
               ))}
             </div>
+
+            {resetLink ? (
+              <div className="mt-4 rounded-lg border border-limebet/25 bg-limebet/[0.08] p-3">
+                <div className="flex items-center gap-2 text-sm font-black text-limebet">
+                  <KeyRound size={17} />
+                  Link de {resetLinkUserName}
+                </div>
+                <p className="mt-1 text-xs text-steel">Válido por 30 minutos e apenas para uma redefinição.</p>
+                <div className="mt-3 grid gap-2 md:grid-cols-[1fr_auto]">
+                  <input
+                    className="h-11 min-w-0 rounded-lg border border-white/10 bg-ink px-3 text-xs text-white outline-none"
+                    readOnly
+                    value={resetLink}
+                    onFocus={(event) => event.currentTarget.select()}
+                  />
+                  <button
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-limebet px-4 text-sm font-black text-ink"
+                    type="button"
+                    onClick={copyResetLink}
+                  >
+                    {resetLinkCopied ? <Check size={17} /> : <Copy size={17} />}
+                    {resetLinkCopied ? "Copiado" : "Copiar link"}
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </Panel>
 
           <Panel title="Convites" icon={Ticket}>

@@ -6,6 +6,7 @@ import sharp from "sharp";
 import { z } from "zod";
 import { env } from "../../config/env.js";
 import { requireAdmin, requireAuth } from "../../utils/http.js";
+import { createPasswordResetToken, passwordResetTtlMs } from "../../utils/passwordReset.js";
 import { prisma } from "../../plugins/prisma.js";
 
 const updateMeSchema = z.object({
@@ -148,6 +149,53 @@ export async function usersRoutes(app: FastifyInstance) {
     });
 
     return { users };
+  });
+
+  app.post("/:userId/password-reset", { preHandler: requireAdmin }, async (request, reply) => {
+    const { userId } = userParamsSchema.parse(request.params);
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        nickname: true,
+        email: true
+      }
+    });
+
+    if (!user) {
+      return reply.status(404).send({ message: "Usuario nao encontrado." });
+    }
+
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + passwordResetTtlMs);
+    const { token, tokenHash } = createPasswordResetToken();
+
+    await prisma.$transaction(async (tx) => {
+      await tx.passwordResetToken.updateMany({
+        where: {
+          userId,
+          usedAt: null
+        },
+        data: { usedAt: now }
+      });
+
+      await tx.passwordResetToken.create({
+        data: {
+          userId,
+          tokenHash,
+          expiresAt
+        }
+      });
+    });
+
+    const webOrigin = env.WEB_ORIGIN.replace(/\/$/, "");
+
+    return {
+      resetUrl: `${webOrigin}/redefinir-senha?token=${token}`,
+      expiresAt,
+      user
+    };
   });
 
   app.delete("/:userId", { preHandler: requireAdmin }, async (request, reply) => {
