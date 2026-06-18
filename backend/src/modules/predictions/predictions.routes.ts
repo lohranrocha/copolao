@@ -14,10 +14,17 @@ const predictionSchema = z.object({
 });
 
 export async function predictionsRoutes(app: FastifyInstance) {
-  app.get("/predictions/board", { preHandler: requireAuth }, async (request) => {
+  app.get("/predictions/board", { preHandler: requireAuth }, async (request, reply) => {
+    reply.header("Cache-Control", "no-store");
+
     const [participants, matches] = await Promise.all([
       prisma.user.findMany({
-        where: { role: "PARTICIPANT" },
+        where: {
+          OR: [
+            { role: "PARTICIPANT" },
+            { id: request.user.sub }
+          ]
+        },
         orderBy: { name: "asc" },
         select: {
           id: true,
@@ -84,7 +91,9 @@ export async function predictionsRoutes(app: FastifyInstance) {
     };
   });
 
-  app.get("/predictions/me", { preHandler: requireAuth }, async (request) => {
+  app.get("/predictions/me", { preHandler: requireAuth }, async (request, reply) => {
+    reply.header("Cache-Control", "no-store");
+
     const predictions = await prisma.prediction.findMany({
       where: { userId: request.user.sub },
       orderBy: { match: { matchDateUtc: "asc" } },

@@ -59,6 +59,7 @@ export function MatchesPage() {
         awayScorePrediction: away
       });
       await loadMatches();
+      window.dispatchEvent(new Event("copolao:prediction-updated"));
       setMessage("Palpite salvo.");
     } catch (error) {
       setMessage(getApiError(error));

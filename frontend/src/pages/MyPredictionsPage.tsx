@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { RefreshCw } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
-import { api } from "../api/client";
+import { api, getApiError } from "../api/client";
 import type { Match, Prediction } from "../types/domain";
 import { formatDateTimeBR } from "../utils/date";
 
@@ -10,16 +11,55 @@ type PredictionWithMatch = Prediction & {
 
 export function MyPredictionsPage() {
   const [predictions, setPredictions] = useState<PredictionWithMatch[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState("");
+
+  async function loadPredictions(showRefreshState = false) {
+    if (showRefreshState) setRefreshing(true);
+
+    try {
+      const { data } = await api.get<{ predictions: PredictionWithMatch[] }>("/predictions/me", {
+        params: { updatedAt: Date.now() }
+      });
+      setPredictions(data.predictions);
+      setError("");
+    } catch (loadError) {
+      setError(getApiError(loadError));
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }
 
   useEffect(() => {
-    void api.get<{ predictions: PredictionWithMatch[] }>("/predictions/me").then(({ data }) => {
-      setPredictions(data.predictions);
-    });
+    void loadPredictions();
+
+    const refresh = () => void loadPredictions();
+    window.addEventListener("focus", refresh);
+    window.addEventListener("copolao:prediction-updated", refresh);
+
+    return () => {
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("copolao:prediction-updated", refresh);
+    };
   }, []);
 
   return (
     <section>
-      <PageHeader title="Meus palpites" description="Historico dos seus palpites enviados." />
+      <div className="flex items-start justify-between gap-3">
+        <PageHeader title="Meus palpites" description="Historico dos seus palpites enviados." />
+        <button
+          className="mt-1 grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-white/10 bg-felt text-steel transition hover:border-limebet/45 hover:text-limebet disabled:opacity-50"
+          disabled={refreshing}
+          title="Atualizar palpites"
+          type="button"
+          onClick={() => void loadPredictions(true)}
+        >
+          <RefreshCw className={refreshing ? "animate-spin" : ""} size={17} />
+        </button>
+      </div>
+      {error ? <p className="mb-4 rounded-lg border border-rose-300/25 bg-rose-500/10 px-3 py-2 text-sm font-semibold text-rose-200">{error}</p> : null}
       <div className="space-y-3">
         {predictions.map((prediction) => (
           <article key={prediction.id} className="rounded-lg border border-white/10 bg-felt p-4 text-white shadow-sm">
@@ -35,7 +75,7 @@ export function MyPredictionsPage() {
             </div>
           </article>
         ))}
-        {predictions.length === 0 ? <p className="rounded-lg border border-white/10 bg-felt p-4 text-sm text-steel">Voce ainda nao enviou palpites.</p> : null}
+        {!loading && predictions.length === 0 ? <p className="rounded-lg border border-white/10 bg-felt p-4 text-sm text-steel">Voce ainda nao enviou palpites.</p> : null}
       </div>
     </section>
   );

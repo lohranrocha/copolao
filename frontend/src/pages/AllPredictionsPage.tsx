@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronUp, Eye, EyeOff, Lock, UsersRound } from "lucide-react";
+import { ChevronDown, ChevronUp, Eye, EyeOff, Lock, RefreshCw, UsersRound } from "lucide-react";
 import clsx from "clsx";
 import { PageHeader } from "../components/PageHeader";
 import { TeamFlag } from "../components/TeamFlag";
 import { UserAvatar } from "../components/UserAvatar";
 import { useAuth } from "../api/auth";
-import { api } from "../api/client";
+import { api, getApiError } from "../api/client";
 import type { PredictionBoardMatch, PredictionBoardParticipant } from "../types/domain";
 import { formatDateTimeBR } from "../utils/date";
 import { getTeamAsset } from "../utils/teamAssets";
@@ -22,12 +22,47 @@ export function AllPredictionsPage() {
   const [matches, setMatches] = useState<PredictionBoardMatch[]>([]);
   const [group, setGroup] = useState("ALL");
   const [expandedMatches, setExpandedMatches] = useState<Set<string>>(() => new Set());
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    void api.get<BoardResponse>("/predictions/board").then(({ data }) => {
+  async function loadBoard(showRefreshState = false) {
+    if (showRefreshState) setRefreshing(true);
+
+    try {
+      const { data } = await api.get<BoardResponse>("/predictions/board", {
+        params: { updatedAt: Date.now() }
+      });
       setParticipants(data.participants);
       setMatches(data.matches);
-    });
+      setError("");
+    } catch (loadError) {
+      setError(getApiError(loadError));
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadBoard();
+
+    const refresh = () => void loadBoard();
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    const interval = window.setInterval(refreshWhenVisible, 15_000);
+
+    window.addEventListener("focus", refresh);
+    window.addEventListener("copolao:prediction-updated", refresh);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("copolao:prediction-updated", refresh);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
   }, []);
 
   const groups = useMemo(
@@ -56,21 +91,34 @@ export function AllPredictionsPage() {
         description="Antes do jogo começar, os palpites dos outros participantes ficam ocultos. Depois do início, todo mundo vê."
       />
 
-      <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
-        {groups.map((item) => (
-          <button
-            key={item}
-            className={clsx(
-              "h-10 shrink-0 rounded-lg border px-4 text-sm font-bold transition",
-              group === item ? "border-limebet bg-limebet text-ink" : "border-white/10 bg-felt text-steel"
-            )}
-            type="button"
-            onClick={() => setGroup(item)}
-          >
-            {item === "ALL" ? "Todos" : `Grupo ${item}`}
-          </button>
-        ))}
+      <div className="mb-4 flex items-center gap-2">
+        <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-1">
+          {groups.map((item) => (
+            <button
+              key={item}
+              className={clsx(
+                "h-10 shrink-0 rounded-lg border px-4 text-sm font-bold transition",
+                group === item ? "border-limebet bg-limebet text-ink" : "border-white/10 bg-felt text-steel"
+              )}
+              type="button"
+              onClick={() => setGroup(item)}
+            >
+              {item === "ALL" ? "Todos" : `Grupo ${item}`}
+            </button>
+          ))}
+        </div>
+        <button
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-white/10 bg-felt text-steel transition hover:border-limebet/45 hover:text-limebet disabled:opacity-50"
+          disabled={refreshing}
+          title="Atualizar palpites"
+          type="button"
+          onClick={() => void loadBoard(true)}
+        >
+          <RefreshCw className={refreshing ? "animate-spin" : ""} size={17} />
+        </button>
       </div>
+
+      {error ? <p className="mb-4 rounded-lg border border-rose-300/25 bg-rose-500/10 px-3 py-2 text-sm font-semibold text-rose-200">{error}</p> : null}
 
       <div className="space-y-6">
         {sections.map((section) => (
@@ -92,7 +140,7 @@ export function AllPredictionsPage() {
         ))}
       </div>
 
-      {visibleMatches.length === 0 ? <p className="rounded-lg border border-white/10 bg-felt p-4 text-sm text-steel">Nenhum jogo encontrado para este filtro.</p> : null}
+      {!loading && visibleMatches.length === 0 ? <p className="rounded-lg border border-white/10 bg-felt p-4 text-sm text-steel">Nenhum jogo encontrado para este filtro.</p> : null}
     </section>
   );
 }
@@ -113,9 +161,10 @@ function PredictionBoardCard({
   const homeAsset = getTeamAsset(match.homeTeam);
   const awayAsset = getTeamAsset(match.awayTeam);
   const predictionsByUser = new Map(match.predictions.map((prediction) => [prediction.userId, prediction]));
-  const ownParticipant = participants.find((participant) => participant.id === currentUserId);
-  const visibleParticipants = expanded ? participants : ownParticipant ? [ownParticipant] : [];
-  const hiddenParticipantsCount = Math.max(participants.length - visibleParticipants.length, 0);
+  const boardParticipants = mergeBoardParticipants(participants, match.predictions);
+  const ownParticipant = boardParticipants.find((participant) => participant.id === currentUserId);
+  const visibleParticipants = expanded ? boardParticipants : ownParticipant ? [ownParticipant] : [];
+  const hiddenParticipantsCount = Math.max(boardParticipants.length - visibleParticipants.length, 0);
 
   return (
     <article className="overflow-hidden rounded-lg border border-white/10 bg-felt text-white shadow-sm">
@@ -183,7 +232,7 @@ function PredictionBoardCard({
         </div>
       ) : null}
 
-      {participants.length === 0 ? <p className="px-4 py-4 text-sm text-steel">Nenhum participante cadastrado ainda.</p> : null}
+      {boardParticipants.length === 0 ? <p className="px-4 py-4 text-sm text-steel">Nenhum participante cadastrado ainda.</p> : null}
     </article>
   );
 }
@@ -231,6 +280,21 @@ function visibilityLabel(match: PredictionBoardMatch) {
 
 function predictionLabel(hidden: boolean) {
   return hidden ? "Enviado, mas ainda bloqueado" : "Palpite enviado";
+}
+
+function mergeBoardParticipants(
+  participants: PredictionBoardParticipant[],
+  predictions: PredictionBoardMatch["predictions"]
+) {
+  const participantsById = new Map(participants.map((participant) => [participant.id, participant]));
+
+  for (const prediction of predictions) {
+    participantsById.set(prediction.userId, prediction.user);
+  }
+
+  return Array.from(participantsById.values()).sort((a, b) =>
+    (a.nickname || a.name).localeCompare(b.nickname || b.name, "pt-BR")
+  );
 }
 
 function buildMatchSections(matches: PredictionBoardMatch[]) {
