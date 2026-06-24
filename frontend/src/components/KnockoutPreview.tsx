@@ -10,6 +10,7 @@ type KnockoutMatch = {
   dateUtc: string;
   home: string;
   away: string;
+  points: number;
   accent?: "bronze" | "final";
 };
 
@@ -115,11 +116,13 @@ export function KnockoutPreview() {
         </div>
 
         <div className="grid gap-px bg-white/10 sm:grid-cols-3">
-          <RuleStat icon={Target} value="3 pts" label="placar exato em 90 min" />
-          <RuleStat icon={CheckCircle2} value="1 pt" label="resultado correto em 90 min" />
-          <RuleStat icon={Trophy} value="+1 pt" label="seleção classificada" />
+          <RuleStat icon={CheckCircle2} value="2–8 pts" label="resultado correto, conforme a fase" />
+          <RuleStat icon={Target} value="+3 pts" label="bônus adicional pelo placar exato" />
+          <RuleStat icon={Clock3} value="90 min" label="placar considerado para a pontuação" />
         </div>
       </section>
+
+      <ScoringTable />
 
       <div className="flex gap-2 overflow-x-auto pb-1 lg:hidden">
         {knockoutRounds.map((round) => (
@@ -173,7 +176,7 @@ export function KnockoutPreview() {
       <div className="flex items-start gap-3 rounded-lg border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
         <LockKeyhole className="mt-0.5 shrink-0" size={18} />
         <p>
-          Os palpites serão liberados somente quando as duas seleções do confronto estiverem confirmadas. O fechamento continua 30 minutos antes do início.
+          Os palpites serão liberados somente quando as duas seleções estiverem confirmadas. Em caso de empate previsto, também será necessário indicar quem avança, sem ponto adicional separado.
         </p>
       </div>
     </div>
@@ -181,7 +184,7 @@ export function KnockoutPreview() {
 }
 
 function knockoutMatch(number: number, dateUtc: string, home: string, away: string): KnockoutMatch {
-  return { number, dateUtc, home, away };
+  return { number, dateUtc, home, away, points: knockoutMatchPoints(number) };
 }
 
 function SummaryStat({ value, label }: { value: string; label: string }) {
@@ -214,13 +217,18 @@ function RuleStat({
 }
 
 function RoundHeading({ round }: { round: KnockoutRound }) {
+  const points = Array.from(new Set(round.matches.map((match) => match.points)));
+
   return (
     <div className="flex items-end justify-between gap-2 border-b border-white/10 pb-2">
       <div>
         <p className="text-[10px] font-black uppercase text-limebet">{round.matches.length} jogos</p>
         <h3 className="text-base font-black text-white">{round.label}</h3>
       </div>
-      <span className="text-xs font-bold text-steel">{round.matches[0]?.number}–{round.matches.at(-1)?.number}</span>
+      <div className="text-right">
+        <span className="block text-xs font-black text-limebet">{points.join("–")} pts</span>
+        <span className="text-[10px] font-bold text-steel">{round.matches[0]?.number}–{round.matches.at(-1)?.number}</span>
+      </div>
     </div>
   );
 }
@@ -241,9 +249,12 @@ function KnockoutMatchCard({ match, compact = false }: { match: KnockoutMatch; c
       )}
     >
       <div className="flex items-center justify-between gap-2 border-b border-white/10 bg-white/[0.03] px-3 py-2">
-        <span className={clsx("text-[10px] font-black uppercase", finalMatch ? "text-limebet" : bronzeMatch ? "text-amber-200" : "text-steel")}>
-          {finalMatch ? "Final" : bronzeMatch ? "3º lugar" : `Jogo ${match.number}`}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className={clsx("text-[10px] font-black uppercase", finalMatch ? "text-limebet" : bronzeMatch ? "text-amber-200" : "text-steel")}>
+            {finalMatch ? "Final" : bronzeMatch ? "3º lugar" : `Jogo ${match.number}`}
+          </span>
+          <span className="rounded-md bg-limebet px-1.5 py-0.5 text-[9px] font-black text-ink">{match.points} pts</span>
+        </div>
         <span className="inline-flex items-center gap-1 text-[10px] font-bold text-steel">
           <Clock3 size={12} />
           {formatDateTimeBR(match.dateUtc)}
@@ -282,4 +293,42 @@ function desktopRoundSpacing(roundId: KnockoutRoundId) {
   if (roundId === "QUARTER_FINAL") return "gap-[310px] pt-[156px]";
   if (roundId === "SEMI_FINAL") return "gap-[735px] pt-[365px]";
   return "gap-6 pt-[610px]";
+}
+
+function knockoutMatchPoints(number: number) {
+  if (number <= 96) return 2;
+  if (number <= 100) return 4;
+  if (number <= 103) return 5;
+  return 8;
+}
+
+function ScoringTable() {
+  const rows = [
+    { label: "16 avos", points: 2, exact: 5 },
+    { label: "Oitavas", points: 2, exact: 5 },
+    { label: "Quartas", points: 4, exact: 7 },
+    { label: "Semifinais", points: 5, exact: 8 },
+    { label: "3º lugar", points: 5, exact: 8 },
+    { label: "Final", points: 8, exact: 11 }
+  ];
+
+  return (
+    <section className="rounded-lg border border-white/10 bg-felt p-4 text-white shadow-sm">
+      <div className="mb-3">
+        <p className="text-xs font-black uppercase text-limebet">Pontuação do mata-mata</p>
+        <p className="mt-1 text-sm text-steel">O placar exato soma 3 pontos ao valor da fase.</p>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {rows.map((row) => (
+          <div key={row.label} className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-ink px-3 py-3">
+            <span className="text-sm font-bold">{row.label}</span>
+            <div className="text-right">
+              <strong className="block text-sm text-limebet">{row.points} pts</strong>
+              <span className="text-[10px] font-bold uppercase text-steel">exato: {row.exact}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
 }

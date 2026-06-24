@@ -16,8 +16,9 @@ const highlights = [
 ];
 
 const scoringRules = [
-  { title: "Placar exato", value: "3 pts", text: "Acertou exatamente o resultado do jogo." },
-  { title: "Resultado certo", value: "1 pt", text: "Acertou vencedor ou empate, mas errou o placar." },
+  { title: "Grupos: placar exato", value: "3 pts", text: "Acertou exatamente o resultado do jogo na fase de grupos." },
+  { title: "Grupos: resultado certo", value: "1 pt", text: "Acertou vencedor ou empate na fase de grupos, mas errou o placar." },
+  { title: "Mata-mata", value: "2–8 pts", text: "O valor do resultado correto aumenta a cada fase. Placar exato soma +3." },
   { title: "Ordem do grupo", value: "1 pt", text: "Cada posição correta na classificação final vale ponto." },
   { title: "Grupo perfeito", value: "+1 pt", text: "Acertou as quatro posições do mesmo grupo." },
   { title: "Bônus especiais", value: "até 20 pts", text: "Campeão, vice, artilheiro e melhor ataque." },

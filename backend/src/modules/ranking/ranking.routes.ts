@@ -87,7 +87,8 @@ async function recalculateFinishedMatches() {
         homeScorePrediction: prediction.homeScorePrediction,
         awayScorePrediction: prediction.awayScorePrediction,
         homeScoreReal: match.homeScore ?? 0,
-        awayScoreReal: match.awayScore ?? 0
+        awayScoreReal: match.awayScore ?? 0,
+        stage: match.stage
       });
 
       await prisma.prediction.update({

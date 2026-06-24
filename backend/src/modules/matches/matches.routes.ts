@@ -109,7 +109,8 @@ export async function matchesRoutes(app: FastifyInstance) {
           homeScorePrediction: prediction.homeScorePrediction,
           awayScorePrediction: prediction.awayScorePrediction,
           homeScoreReal: body.homeScore,
-          awayScoreReal: body.awayScore
+          awayScoreReal: body.awayScore,
+          stage: match.stage
         });
 
         await tx.prediction.update({
