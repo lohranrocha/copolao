@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { CalendarClock, CheckCircle2, Gift, GripVertical, Save, ShieldCheck, Trophy, X } from "lucide-react";
+import { CheckCircle2, Gift, GripVertical, Save, Trophy, X } from "lucide-react";
 import clsx from "clsx";
+import { KnockoutPreview } from "../components/KnockoutPreview";
 import { MatchCard } from "../components/MatchCard";
 import { TeamFlag } from "../components/TeamFlag";
 import { api, getApiError } from "../api/client";
@@ -132,7 +133,7 @@ export function MatchesPage() {
 
       {message ? <p className="mb-4 rounded-lg border border-limebet/30 bg-limebet/10 px-3 py-2 text-sm font-semibold text-limebet">{message}</p> : null}
 
-      {viewMode === "KNOCKOUT" ? <ComingSoonPanel /> : null}
+      {viewMode === "KNOCKOUT" ? <KnockoutPreview /> : null}
       {viewMode === "BONUS" ? <BonusPredictionsPanel /> : null}
 
       {viewMode === "UPCOMING" || viewMode === "GROUPS" ? (
@@ -229,24 +230,6 @@ function CountdownUnit({ label, value }: { label: string; value: number }) {
     <div className="min-w-16 rounded-lg border border-limebet/25 bg-ink px-3 py-2 text-center">
       <p className="text-2xl font-black leading-none text-limebet">{String(value).padStart(2, "0")}</p>
       <p className="mt-1 text-[10px] font-bold uppercase text-steel">{label}</p>
-    </div>
-  );
-}
-
-function ComingSoonPanel() {
-  return (
-    <div className="rounded-lg border border-white/10 bg-felt p-5 text-white shadow-sm">
-      <div className="mb-4 grid h-12 w-12 place-items-center rounded-lg bg-limebet text-ink">
-        <ShieldCheck size={24} />
-      </div>
-      <h2 className="text-xl font-black">Mata-mata</h2>
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-steel">
-        Os jogos eliminatórios entram quando os confrontos forem definidos. A tela já está reservada para essa fase.
-      </p>
-      <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-limebet/10 px-3 py-1 text-xs font-bold uppercase text-limebet">
-        <CalendarClock size={14} />
-        Em breve
-      </div>
     </div>
   );
 }
