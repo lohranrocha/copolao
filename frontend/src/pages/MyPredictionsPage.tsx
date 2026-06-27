@@ -4,6 +4,7 @@ import { PageHeader } from "../components/PageHeader";
 import { api, getApiError } from "../api/client";
 import type { Match, Prediction } from "../types/domain";
 import { formatDateTimeBR } from "../utils/date";
+import { matchCompetitionLabel } from "../utils/match";
 
 type PredictionWithMatch = Prediction & {
   match: Match;
@@ -64,7 +65,7 @@ export function MyPredictionsPage() {
         {predictions.map((prediction) => (
           <article key={prediction.id} className="rounded-lg border border-white/10 bg-felt p-4 text-white shadow-sm">
             <p className="text-xs font-medium uppercase text-steel">
-              Grupo {prediction.match.groupCode} · {formatDateTimeBR(prediction.match.matchDateUtc)}
+              {matchCompetitionLabel(prediction.match.stage, prediction.match.groupCode)} · {formatDateTimeBR(prediction.match.matchDateUtc)}
             </p>
             <h2 className="mt-2 font-bold">
               {prediction.match.homeTeam} {prediction.homeScorePrediction} x {prediction.awayScorePrediction} {prediction.match.awayTeam}

@@ -17,6 +17,12 @@ const resultSchema = z.object({
   awayScore: z.number().int().min(0)
 });
 
+type GroupTeamMatch = {
+  groupCode: string | null;
+  homeTeam: string;
+  awayTeam: string;
+};
+
 export async function matchesRoutes(app: FastifyInstance) {
   app.get("/", { preHandler: requireAuth }, async (request) => {
     const matches = await prisma.match.findMany({
@@ -44,6 +50,48 @@ export async function matchesRoutes(app: FastifyInstance) {
         myPrediction: match.predictions[0] ?? null,
         predictions: undefined
       }))
+    };
+  });
+
+  app.get("/qualified-teams", { preHandler: requireAuth }, async () => {
+    const [groupMatches, groupResults] = await Promise.all([
+      prisma.match.findMany({
+        where: {
+          stage: "GROUP_STAGE",
+          groupCode: { not: null }
+        },
+        orderBy: [{ groupCode: "asc" }, { matchDateUtc: "asc" }],
+        select: {
+          groupCode: true,
+          homeTeam: true,
+          awayTeam: true
+        }
+      }),
+      prisma.groupStandingResult.findMany({
+        orderBy: { groupCode: "asc" }
+      })
+    ]);
+
+    const matchesByGroup = new Map<string, GroupTeamMatch[]>();
+    for (const match of groupMatches) {
+      if (!match.groupCode) continue;
+      matchesByGroup.set(match.groupCode, [...(matchesByGroup.get(match.groupCode) ?? []), match]);
+    }
+
+    const resultByGroup = new Map(groupResults.map((result) => [result.groupCode, result]));
+
+    return {
+      groups: Array.from(matchesByGroup.entries()).map(([groupCode, matches]) => {
+        const result = resultByGroup.get(groupCode);
+
+        return {
+          groupCode,
+          teams: getQualifiedGroupTeams(matches),
+          result: result ?? null,
+          directQualifiedTeams: result ? [result.firstTeam, result.secondTeam] : [],
+          thirdPlacedTeam: result?.thirdTeam ?? null
+        };
+      })
     };
   });
 
@@ -171,4 +219,10 @@ export async function matchesRoutes(app: FastifyInstance) {
       }
     };
   });
+}
+
+function getQualifiedGroupTeams(matches: GroupTeamMatch[]) {
+  return Array.from(new Set(matches.flatMap((match) => [match.homeTeam, match.awayTeam]))).sort((a, b) =>
+    a.localeCompare(b, "pt-BR")
+  );
 }

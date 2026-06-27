@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { CheckCircle2, Gift, GripVertical, Save, Trophy, X } from "lucide-react";
+import { CheckCircle2, Gift, GripVertical, LockKeyhole, Medal, Save, Trophy, X } from "lucide-react";
 import clsx from "clsx";
 import { KnockoutPreview } from "../components/KnockoutPreview";
 import { MatchCard } from "../components/MatchCard";
 import { TeamFlag } from "../components/TeamFlag";
 import { api, getApiError } from "../api/client";
-import type { BonusQuestion, GroupStandingBonus, Match } from "../types/domain";
+import type { BonusQuestion, GroupStandingBonus, Match, QualifiedGroup } from "../types/domain";
 import { formatDateHeadingBR, formatDateTimeBR } from "../utils/date";
 import { getTeamAsset } from "../utils/teamAssets";
 
@@ -22,13 +22,18 @@ const tabs: Array<{ mode: ViewMode; label: string }> = [
 export function MatchesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [matches, setMatches] = useState<Match[]>([]);
+  const [qualifiedGroups, setQualifiedGroups] = useState<QualifiedGroup[]>([]);
   const [group, setGroup] = useState("ALL");
   const [viewMode, setViewMode] = useState<ViewMode>(() => viewModeFromParam(searchParams.get("aba")));
   const [message, setMessage] = useState("");
 
   async function loadMatches() {
-    const { data } = await api.get<{ matches: Match[] }>("/matches");
-    setMatches(data.matches);
+    const [matchesResponse, qualifiedResponse] = await Promise.all([
+      api.get<{ matches: Match[] }>("/matches"),
+      api.get<{ groups: QualifiedGroup[] }>("/matches/qualified-teams")
+    ]);
+    setMatches(matchesResponse.data.matches);
+    setQualifiedGroups(qualifiedResponse.data.groups);
   }
 
   useEffect(() => {
@@ -39,17 +44,20 @@ export function MatchesPage() {
     setViewMode(viewModeFromParam(searchParams.get("aba")));
   }, [searchParams]);
 
+  const groupStageMatches = useMemo(() => matches.filter((match) => match.stage === "GROUP_STAGE"), [matches]);
   const groups = useMemo(
-    () => ["ALL", ...Array.from(new Set(matches.map((match) => match.groupCode).filter((value): value is string => Boolean(value))))],
-    [matches]
+    () => ["ALL", ...Array.from(new Set(groupStageMatches.map((match) => match.groupCode).filter((value): value is string => Boolean(value))))],
+    [groupStageMatches]
   );
   const upcomingMatches = useMemo(
     () => matches.filter((match) => match.computedState === "OPEN" || match.computedState === "LOCKED"),
     [matches]
   );
-  const groupMatches = group === "ALL" ? matches : matches.filter((match) => match.groupCode === group);
+  const groupMatches = group === "ALL" ? groupStageMatches : groupStageMatches.filter((match) => match.groupCode === group);
+  const knockoutMatches = useMemo(() => matches.filter((match) => match.stage !== "GROUP_STAGE"), [matches]);
   const visibleMatches = viewMode === "GROUPS" ? groupMatches : upcomingMatches;
   const sections = viewMode === "GROUPS" ? groupSections(visibleMatches) : dateSections(visibleMatches);
+  const knockoutSections = dateSections(knockoutMatches);
   const firstMatchDate = matches[0]?.matchDateUtc;
 
   async function savePrediction(matchId: string, home: number, away: number) {
@@ -133,7 +141,45 @@ export function MatchesPage() {
 
       {message ? <p className="mb-4 rounded-lg border border-limebet/30 bg-limebet/10 px-3 py-2 text-sm font-semibold text-limebet">{message}</p> : null}
 
-      {viewMode === "KNOCKOUT" ? <KnockoutPreview /> : null}
+      {viewMode === "KNOCKOUT" ? (
+        <div className="space-y-5">
+          <QualifiedTeamsPanel groups={qualifiedGroups} />
+
+          <section className="rounded-lg border border-limebet/20 bg-felt p-4 text-white shadow-sm">
+            <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase text-limebet">Palpites liberados</p>
+                <h2 className="mt-1 text-xl font-black">Jogos do mata-mata definidos</h2>
+                <p className="mt-1 text-sm text-steel">Assim que o confronto entra aqui, ele já pode receber palpite até 30 minutos antes da bola rolar.</p>
+              </div>
+              <span className="w-fit rounded-full border border-limebet/30 bg-limebet/10 px-3 py-1 text-xs font-black text-limebet">
+                {knockoutMatches.length} jogo(s)
+              </span>
+            </div>
+
+            {knockoutSections.length > 0 ? (
+              <div className="space-y-6">
+                {knockoutSections.map((section) => (
+                  <div key={section.title}>
+                    <h3 className="mb-3 text-sm font-black uppercase tracking-wide text-white/75">{section.title}</h3>
+                    <div className="grid gap-4 lg:grid-cols-2">
+                      {section.matches.map((match) => (
+                        <MatchCard key={match.id} match={match} onSavePrediction={savePrediction} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-lg border border-white/10 bg-ink px-3 py-3 text-sm font-semibold text-steel">
+                Nenhum confronto do mata-mata foi definido ainda.
+              </p>
+            )}
+          </section>
+
+          <KnockoutPreview confirmedMatches={knockoutMatches} />
+        </div>
+      ) : null}
       {viewMode === "BONUS" ? <BonusPredictionsPanel /> : null}
 
       {viewMode === "UPCOMING" || viewMode === "GROUPS" ? (
@@ -194,6 +240,88 @@ function groupSections(matches: Match[]) {
     title,
     matches: sectionMatches
   }));
+}
+
+function QualifiedTeamsPanel({ groups }: { groups: QualifiedGroup[] }) {
+  const completedGroups = groups.filter((group) => group.result);
+  const directQualifiedCount = completedGroups.length * 2;
+
+  return (
+    <section className="rounded-lg border border-white/10 bg-felt p-4 text-white shadow-sm">
+      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="text-xs font-black uppercase text-limebet">Classificados</p>
+          <h2 className="mt-1 text-xl font-black">Tabela por grupo</h2>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-steel">
+            Os dois primeiros de cada grupo entram como classificados diretos. Os terceiros colocados ficam sinalizados até fechar a combinação dos melhores terceiros.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-center">
+          <div className="rounded-lg border border-limebet/25 bg-limebet/10 px-3 py-2">
+            <p className="text-xl font-black text-limebet">{directQualifiedCount}</p>
+            <p className="text-[10px] font-bold uppercase text-steel">diretos</p>
+          </div>
+          <div className="rounded-lg border border-white/10 bg-ink px-3 py-2">
+            <p className="text-xl font-black text-white">{completedGroups.length}</p>
+            <p className="text-[10px] font-bold uppercase text-steel">grupos</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {groups.map((group) => (
+          <article key={group.groupCode} className="rounded-lg border border-white/10 bg-ink p-3">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h3 className="text-sm font-black uppercase text-white">Grupo {group.groupCode}</h3>
+              <span
+                className={clsx(
+                  "rounded-full border px-2 py-0.5 text-[10px] font-black uppercase",
+                  group.result ? "border-limebet/30 bg-limebet/10 text-limebet" : "border-amber-300/25 bg-amber-300/10 text-amber-200"
+                )}
+              >
+                {group.result ? "Definido" : "Aguardando"}
+              </span>
+            </div>
+
+            {group.result ? (
+              <div className="space-y-2">
+                <QualifiedTeamRow team={group.result.firstTeam} label="1º classificado" />
+                <QualifiedTeamRow team={group.result.secondTeam} label="2º classificado" />
+                <QualifiedTeamRow team={group.result.thirdTeam} label="3º colocado" pending />
+              </div>
+            ) : (
+              <div className="flex items-start gap-3 rounded-lg border border-amber-300/20 bg-amber-300/10 px-3 py-3 text-sm font-semibold text-amber-100">
+                <LockKeyhole className="mt-0.5 shrink-0" size={17} />
+                Resultado final do grupo ainda não lançado.
+              </div>
+            )}
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function QualifiedTeamRow({ team, label, pending = false }: { team: string; label: string; pending?: boolean }) {
+  const asset = getTeamAsset(team);
+
+  return (
+    <div
+      className={clsx(
+        "flex items-center gap-3 rounded-lg border px-3 py-2",
+        pending ? "border-amber-300/20 bg-amber-300/10" : "border-limebet/25 bg-limebet/[0.07]"
+      )}
+    >
+      <TeamFlag asset={asset} label={team} size="sm" />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-black text-white">{team}</p>
+        <p className={clsx("text-[11px] font-bold uppercase", pending ? "text-amber-200" : "text-limebet")}>
+          {label}
+        </p>
+      </div>
+      <Medal className={pending ? "text-amber-200" : "text-limebet"} size={17} />
+    </div>
+  );
 }
 
 function Countdown({ targetDate }: { targetDate?: string }) {

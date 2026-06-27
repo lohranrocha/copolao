@@ -4,7 +4,7 @@ import clsx from "clsx";
 import { TeamFlag } from "./TeamFlag";
 import type { Match } from "../types/domain";
 import { formatFullDateTimeBR } from "../utils/date";
-import { matchStateLabel, matchStateTone } from "../utils/match";
+import { matchCompetitionLabel, matchStateLabel, matchStateTone } from "../utils/match";
 import { getTeamAsset, type TeamAsset } from "../utils/teamAssets";
 
 export function MatchCard({
@@ -55,7 +55,9 @@ export function MatchCard({
     >
       <div className={clsx("flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3", hasPrediction ? "border-limebet/20 bg-limebet/[0.06]" : "border-white/10 bg-white/[0.03]")}>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full bg-limebet px-2 py-1 text-[11px] font-black uppercase text-ink">Grupo {match.groupCode}</span>
+          <span className="rounded-full bg-limebet px-2 py-1 text-[11px] font-black uppercase text-ink">
+            {matchCompetitionLabel(match.stage, match.groupCode)}
+          </span>
           <time className="rounded-full border border-white/10 bg-ink px-2.5 py-1 text-xs font-bold text-white">
             {formatFullDateTimeBR(match.matchDateUtc)}
           </time>

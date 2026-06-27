@@ -139,6 +139,14 @@ export type GroupStandingBonus = {
   myPrediction: GroupStandingPrediction | null;
 };
 
+export type QualifiedGroup = {
+  groupCode: string;
+  teams: string[];
+  result: GroupStandingResult | null;
+  directQualifiedTeams: string[];
+  thirdPlacedTeam: string | null;
+};
+
 export type AdminGroupStanding = Omit<GroupStandingBonus, "myPrediction"> & {
   predictionCount: number;
 };

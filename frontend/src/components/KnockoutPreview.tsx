@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { CalendarClock, CheckCircle2, ChevronRight, Clock3, LockKeyhole, Target, Trophy } from "lucide-react";
 import clsx from "clsx";
+import { TeamFlag } from "./TeamFlag";
+import type { Match } from "../types/domain";
 import { formatDateTimeBR } from "../utils/date";
+import { matchStateLabel, matchStateTone } from "../utils/match";
+import { getTeamAsset } from "../utils/teamAssets";
 
 type KnockoutRoundId = "ROUND_OF_32" | "ROUND_OF_16" | "QUARTER_FINAL" | "SEMI_FINAL" | "FINALS";
 
@@ -91,9 +95,10 @@ const knockoutRounds: KnockoutRound[] = [
   }
 ];
 
-export function KnockoutPreview() {
+export function KnockoutPreview({ confirmedMatches = [] }: { confirmedMatches?: Match[] }) {
   const [activeRoundId, setActiveRoundId] = useState<KnockoutRoundId>("ROUND_OF_32");
   const activeRound = knockoutRounds.find((round) => round.id === activeRoundId) ?? knockoutRounds[0];
+  const confirmedMatchByNumber = new Map(confirmedMatches.map((match) => [match.matchNumber, match]));
 
   return (
     <div className="space-y-5">
@@ -146,7 +151,7 @@ export function KnockoutPreview() {
         <RoundHeading round={activeRound} />
         <div className="mt-3 space-y-3">
           {activeRound.matches.map((match) => (
-            <KnockoutMatchCard key={match.number} match={match} />
+            <KnockoutMatchCard key={match.number} match={match} confirmedMatch={confirmedMatchByNumber.get(match.number)} />
           ))}
         </div>
       </section>
@@ -160,7 +165,7 @@ export function KnockoutPreview() {
                 <div className={clsx("mt-3 flex flex-col", desktopRoundSpacing(round.id))}>
                   {round.matches.map((match) => (
                     <div key={match.number} className="relative">
-                      <KnockoutMatchCard match={match} compact />
+                      <KnockoutMatchCard match={match} confirmedMatch={confirmedMatchByNumber.get(match.number)} compact />
                       {round.id !== "FINALS" ? (
                         <ChevronRight className="absolute -right-[22px] top-1/2 -translate-y-1/2 text-limebet/45" size={17} />
                       ) : null}
@@ -176,7 +181,7 @@ export function KnockoutPreview() {
       <div className="flex items-start gap-3 rounded-lg border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
         <LockKeyhole className="mt-0.5 shrink-0" size={18} />
         <p>
-          Os palpites serão liberados somente quando as duas seleções estiverem confirmadas. Em caso de empate previsto, também será necessário indicar quem avança, sem ponto adicional separado.
+          Os palpites serão liberados somente quando as duas seleções estiverem confirmadas. No mata-mata, o palpite vale pelo placar ao fim dos 90 minutos.
         </p>
       </div>
     </div>
@@ -233,9 +238,20 @@ function RoundHeading({ round }: { round: KnockoutRound }) {
   );
 }
 
-function KnockoutMatchCard({ match, compact = false }: { match: KnockoutMatch; compact?: boolean }) {
+function KnockoutMatchCard({
+  match,
+  confirmedMatch,
+  compact = false
+}: {
+  match: KnockoutMatch;
+  confirmedMatch?: Match;
+  compact?: boolean;
+}) {
   const finalMatch = match.accent === "final";
   const bronzeMatch = match.accent === "bronze";
+  const home = confirmedMatch?.homeTeam ?? match.home;
+  const away = confirmedMatch?.awayTeam ?? match.away;
+  const dateUtc = confirmedMatch?.matchDateUtc ?? match.dateUtc;
 
   return (
     <article
@@ -257,31 +273,46 @@ function KnockoutMatchCard({ match, compact = false }: { match: KnockoutMatch; c
         </div>
         <span className="inline-flex items-center gap-1 text-[10px] font-bold text-steel">
           <Clock3 size={12} />
-          {formatDateTimeBR(match.dateUtc)}
+          {formatDateTimeBR(dateUtc)}
         </span>
       </div>
 
       <div className={clsx("divide-y divide-white/10", compact ? "text-xs" : "text-sm")}>
-        <BracketSlot label={match.home} />
-        <BracketSlot label={match.away} />
+        <BracketSlot label={home} confirmed={Boolean(confirmedMatch)} />
+        <BracketSlot label={away} confirmed={Boolean(confirmedMatch)} />
       </div>
 
       {!compact ? (
         <div className="flex items-center gap-2 border-t border-white/10 px-3 py-2 text-[11px] font-semibold text-steel">
           <CalendarClock size={13} />
-          Aguardando definição do confronto
+          {confirmedMatch ? (
+            <>
+              <span className={clsx("rounded-full border px-2 py-0.5", matchStateTone(confirmedMatch.computedState))}>
+                {matchStateLabel(confirmedMatch.computedState)}
+              </span>
+              Confronto definido
+            </>
+          ) : (
+            "Aguardando definição do confronto"
+          )}
         </div>
       ) : null}
     </article>
   );
 }
 
-function BracketSlot({ label }: { label: string }) {
+function BracketSlot({ label, confirmed }: { label: string; confirmed: boolean }) {
+  const asset = confirmed ? getTeamAsset(label) : null;
+
   return (
     <div className="flex min-h-10 items-center gap-2 px-3 py-2">
-      <div className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-white/10 bg-ink text-[9px] font-black text-limebet">
-        ?
-      </div>
+      {asset ? (
+        <TeamFlag asset={asset} label={label} size="sm" />
+      ) : (
+        <div className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-white/10 bg-ink text-[9px] font-black text-limebet">
+          ?
+        </div>
+      )}
       <span className="min-w-0 truncate font-bold">{label}</span>
     </div>
   );

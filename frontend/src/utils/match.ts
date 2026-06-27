@@ -21,3 +21,22 @@ export function matchStateTone(state: ComputedMatchState) {
 
   return tones[state];
 }
+
+export function matchStageLabel(stage: string) {
+  const labels: Record<string, string> = {
+    GROUP_STAGE: "Fase de grupos",
+    ROUND_OF_32: "16 avos",
+    ROUND_OF_16: "Oitavas",
+    QUARTER_FINAL: "Quartas",
+    SEMI_FINAL: "Semifinal",
+    THIRD_PLACE: "3º lugar",
+    FINAL: "Final"
+  };
+
+  return labels[stage] ?? stage;
+}
+
+export function matchCompetitionLabel(stage: string, groupCode?: string | null) {
+  if (stage === "GROUP_STAGE") return groupCode ? `Grupo ${groupCode}` : "Fase de grupos";
+  return matchStageLabel(stage);
+}

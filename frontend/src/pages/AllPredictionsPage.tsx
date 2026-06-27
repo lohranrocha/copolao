@@ -9,7 +9,7 @@ import { api, getApiError } from "../api/client";
 import type { PredictionBoardMatch, PredictionBoardParticipant } from "../types/domain";
 import { formatDateTimeBR } from "../utils/date";
 import { getTeamAsset } from "../utils/teamAssets";
-import { matchStateLabel, matchStateTone } from "../utils/match";
+import { matchCompetitionLabel, matchStateLabel, matchStateTone } from "../utils/match";
 
 type BoardResponse = {
   participants: PredictionBoardParticipant[];
@@ -171,7 +171,7 @@ function PredictionBoardCard({
       <div className="flex items-start justify-between gap-3 border-b border-white/10 bg-white/[0.03] px-4 py-3">
         <div>
           <p className="text-xs font-bold uppercase text-steel">
-            Grupo {match.groupCode} · {formatDateTimeBR(match.matchDateUtc)}
+            {matchCompetitionLabel(match.stage, match.groupCode)} · {formatDateTimeBR(match.matchDateUtc)}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-base font-black">
             <span className="inline-flex items-center gap-2">

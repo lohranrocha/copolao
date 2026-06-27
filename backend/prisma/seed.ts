@@ -6,12 +6,13 @@ const prisma = new PrismaClient();
 
 type FixtureSeed = {
   matchNumber: number;
-  groupCode: string;
+  groupCode: string | null;
   homeTeam: string;
   awayTeam: string;
   venue: string;
   city: string;
   matchDateUtc: string;
+  stage?: "GROUP_STAGE" | "ROUND_OF_32";
 };
 
 const teamNamesPt: Record<string, string> = {
@@ -175,6 +176,14 @@ const fixtures: FixtureSeed[] = [
   { matchNumber: 72, groupCode: "J", homeTeam: "Jordan", awayTeam: "Argentina", venue: "AT&T Stadium", city: "Arlington", matchDateUtc: "2026-06-28T02:00:00.000Z" }
 ];
 
+const knockoutFixtures: FixtureSeed[] = [
+  { matchNumber: 73, groupCode: null, homeTeam: "África do Sul", awayTeam: "Canadá", venue: "A definir", city: "A definir", matchDateUtc: "2026-06-28T19:00:00.000Z", stage: "ROUND_OF_32" },
+  { matchNumber: 75, groupCode: null, homeTeam: "Holanda", awayTeam: "Marrocos", venue: "A definir", city: "A definir", matchDateUtc: "2026-06-29T20:30:00.000Z", stage: "ROUND_OF_32" },
+  { matchNumber: 76, groupCode: null, homeTeam: "Brasil", awayTeam: "Japão", venue: "A definir", city: "A definir", matchDateUtc: "2026-06-30T01:00:00.000Z", stage: "ROUND_OF_32" },
+  { matchNumber: 78, groupCode: null, homeTeam: "Costa do Marfim", awayTeam: "Noruega", venue: "A definir", city: "A definir", matchDateUtc: "2026-06-30T21:00:00.000Z", stage: "ROUND_OF_32" },
+  { matchNumber: 88, groupCode: null, homeTeam: "Austrália", awayTeam: "Egito", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-04T00:30:00.000Z", stage: "ROUND_OF_32" }
+];
+
 async function main() {
   const adminEmail = process.env.DEFAULT_ADMIN_EMAIL ?? "admin@bolao.local";
   const adminPassword = process.env.DEFAULT_ADMIN_PASSWORD ?? "Admin@2026";
@@ -191,14 +200,14 @@ async function main() {
     }
   });
 
-  for (const fixture of fixtures) {
+  for (const fixture of [...fixtures, ...knockoutFixtures]) {
     await prisma.match.upsert({
       where: { matchNumber: fixture.matchNumber },
       update: {
         homeTeam: teamNamePt(fixture.homeTeam),
         awayTeam: teamNamePt(fixture.awayTeam),
         groupCode: fixture.groupCode,
-        stage: "GROUP_STAGE",
+        stage: fixture.stage ?? "GROUP_STAGE",
         venue: fixture.venue,
         city: fixture.city,
         matchDateUtc: new Date(fixture.matchDateUtc),
@@ -209,7 +218,7 @@ async function main() {
         homeTeam: teamNamePt(fixture.homeTeam),
         awayTeam: teamNamePt(fixture.awayTeam),
         groupCode: fixture.groupCode,
-        stage: "GROUP_STAGE",
+        stage: fixture.stage ?? "GROUP_STAGE",
         venue: fixture.venue,
         city: fixture.city,
         matchDateUtc: new Date(fixture.matchDateUtc),
