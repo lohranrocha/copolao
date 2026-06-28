@@ -1,13 +1,14 @@
 import { FormEvent, useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { CalendarClock, Check, CheckCircle2, Copy, Gift, KeyRound, Power, RotateCcw, Save, Ticket, Trash2, UsersRound, type LucideIcon } from "lucide-react";
+import { CalendarClock, Check, CheckCircle2, Copy, Gift, KeyRound, Power, RotateCcw, Save, Swords, Ticket, Trash2, UsersRound, type LucideIcon } from "lucide-react";
 import clsx from "clsx";
 import { PageHeader } from "../components/PageHeader";
 import { UserAvatar } from "../components/UserAvatar";
 import { useAuth } from "../api/auth";
 import { api, getApiError } from "../api/client";
-import type { AdminBonusQuestion, AdminGroupStanding, InviteCode, Match, User } from "../types/domain";
+import type { AdminBonusQuestion, AdminGroupStanding, AdminKnockoutMatch, InviteCode, Match, User } from "../types/domain";
 import { formatDateTimeBR } from "../utils/date";
+import { matchCompetitionLabel } from "../utils/match";
 
 export function AdminPage() {
   const { user: currentUser } = useAuth();
@@ -16,6 +17,10 @@ export function AdminPage() {
   const [inviteCodes, setInviteCodes] = useState<InviteCode[]>([]);
   const [bonusQuestions, setBonusQuestions] = useState<AdminBonusQuestion[]>([]);
   const [groupStandings, setGroupStandings] = useState<AdminGroupStanding[]>([]);
+  const [knockoutMatches, setKnockoutMatches] = useState<AdminKnockoutMatch[]>([]);
+  const [knockoutTeamOptions, setKnockoutTeamOptions] = useState<string[]>([]);
+  const [knockoutDrafts, setKnockoutDrafts] = useState<Record<number, KnockoutDraft>>({});
+  const [savingKnockoutMatchNumber, setSavingKnockoutMatchNumber] = useState<number | null>(null);
   const [selectedMatchId, setSelectedMatchId] = useState("");
   const [homeScore, setHomeScore] = useState(0);
   const [awayScore, setAwayScore] = useState(0);
@@ -35,18 +40,32 @@ export function AdminPage() {
   const [resetLinkCopied, setResetLinkCopied] = useState(false);
 
   async function load() {
-    const [usersResponse, matchesResponse, invitesResponse, bonusResponse, groupResponse] = await Promise.all([
+    const [usersResponse, matchesResponse, invitesResponse, bonusResponse, groupResponse, knockoutResponse] = await Promise.all([
       api.get<{ users: User[] }>("/users"),
       api.get<{ matches: Match[] }>("/matches"),
       api.get<{ inviteCodes: InviteCode[] }>("/admin/invite-codes"),
       api.get<{ questions: AdminBonusQuestion[] }>("/admin/bonus-questions"),
-      api.get<{ groups: AdminGroupStanding[] }>("/admin/group-standings")
+      api.get<{ groups: AdminGroupStanding[] }>("/admin/group-standings"),
+      api.get<{ matches: AdminKnockoutMatch[]; teamOptions: string[] }>("/admin/knockout-matches")
     ]);
     setUsers(usersResponse.data.users);
     setMatches(matchesResponse.data.matches);
     setInviteCodes(invitesResponse.data.inviteCodes);
     setBonusQuestions(bonusResponse.data.questions);
     setGroupStandings(groupResponse.data.groups);
+    setKnockoutMatches(knockoutResponse.data.matches);
+    setKnockoutTeamOptions(knockoutResponse.data.teamOptions);
+    setKnockoutDrafts(
+      Object.fromEntries(
+        knockoutResponse.data.matches.map((item) => [
+          item.matchNumber,
+          {
+            homeTeam: item.match?.homeTeam ?? "",
+            awayTeam: item.match?.awayTeam ?? ""
+          }
+        ])
+      )
+    );
     setBonusWindowInput(getBonusWindowInputValue(bonusResponse.data.questions, groupResponse.data.groups));
     setBonusAnswers(Object.fromEntries(bonusResponse.data.questions.map((question) => [question.id, question.correctAnswer ?? ""])));
     setGroupResults(
@@ -256,6 +275,31 @@ export function AdminPage() {
     } catch (error) {
       setMessage(getApiError(error));
     }
+  }
+
+  async function saveKnockoutMatch(matchNumber: number) {
+    setMessage("");
+    setSavingKnockoutMatchNumber(matchNumber);
+
+    try {
+      await api.patch(`/admin/knockout-matches/${matchNumber}`, knockoutDrafts[matchNumber]);
+      await load();
+      setMessage(`Jogo ${matchNumber} definido e liberado para palpite.`);
+    } catch (error) {
+      setMessage(getApiError(error));
+    } finally {
+      setSavingKnockoutMatchNumber(null);
+    }
+  }
+
+  function updateKnockoutDraft(matchNumber: number, field: keyof KnockoutDraft, team: string) {
+    setKnockoutDrafts((current) => ({
+      ...current,
+      [matchNumber]: {
+        ...(current[matchNumber] ?? emptyKnockoutDraft),
+        [field]: team
+      }
+    }));
   }
 
   function updateGroupResult(groupCode: string, field: keyof StandingDraft, team: string) {
@@ -489,6 +533,17 @@ export function AdminPage() {
               ))}
             </div>
           </Panel>
+
+          <Panel title="Definir mata-mata" icon={Swords}>
+            <KnockoutAdminPanel
+              matches={knockoutMatches}
+              teamOptions={knockoutTeamOptions}
+              drafts={knockoutDrafts}
+              savingMatchNumber={savingKnockoutMatchNumber}
+              onChange={updateKnockoutDraft}
+              onSave={saveKnockoutMatch}
+            />
+          </Panel>
         </div>
 
         <form
@@ -541,7 +596,7 @@ export function AdminPage() {
           {selectedMatch ? (
             <div className="mt-3 rounded-lg border border-white/10 bg-ink px-3 py-3 text-xs text-steel">
               <p>
-                Grupo {selectedMatch.groupCode} · {formatDateTimeBR(selectedMatch.matchDateUtc)}
+                {matchCompetitionLabel(selectedMatch.stage, selectedMatch.groupCode)} · {formatDateTimeBR(selectedMatch.matchDateUtc)}
               </p>
               {selectedMatchHasResult ? (
                 <p className="mt-2 font-black text-limebet">
@@ -645,6 +700,16 @@ type StandingDraft = {
   secondTeam: string;
   thirdTeam: string;
   fourthTeam: string;
+};
+
+type KnockoutDraft = {
+  homeTeam: string;
+  awayTeam: string;
+};
+
+const emptyKnockoutDraft: KnockoutDraft = {
+  homeTeam: "",
+  awayTeam: ""
 };
 
 const emptyStanding: StandingDraft = {
@@ -752,6 +817,146 @@ function GroupResultAdminCard({
       </button>
     </div>
   );
+}
+
+function KnockoutAdminPanel({
+  matches,
+  teamOptions,
+  drafts,
+  savingMatchNumber,
+  onChange,
+  onSave
+}: {
+  matches: AdminKnockoutMatch[];
+  teamOptions: string[];
+  drafts: Record<number, KnockoutDraft>;
+  savingMatchNumber: number | null;
+  onChange: (matchNumber: number, field: keyof KnockoutDraft, team: string) => void;
+  onSave: (matchNumber: number) => void;
+}) {
+  const sections = knockoutSections(matches);
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm leading-6 text-steel">
+        Defina as seleções de cada confronto. Quando salvar, o jogo aparece para os participantes e os palpites ficam abertos até 30 minutos antes da partida.
+      </p>
+
+      {sections.map((section) => (
+        <div key={section.title}>
+          <h3 className="mb-2 text-xs font-black uppercase text-limebet">{section.title}</h3>
+          <div className="space-y-2">
+            {section.matches.map((item) => {
+              const draft = drafts[item.matchNumber] ?? emptyKnockoutDraft;
+              const isComplete = Boolean(draft.homeTeam && draft.awayTeam && draft.homeTeam !== draft.awayTeam);
+              const isDefined = Boolean(item.match);
+              const isSaving = savingMatchNumber === item.matchNumber;
+
+              return (
+                <article
+                  key={item.matchNumber}
+                  className={clsx(
+                    "rounded-lg border p-3",
+                    isDefined ? "border-limebet/30 bg-limebet/[0.06]" : "border-white/10 bg-ink"
+                  )}
+                >
+                  <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                    <div>
+                      <p className="text-sm font-black text-white">Jogo {item.matchNumber}</p>
+                      <p className="text-xs leading-5 text-steel">
+                        {item.homeSlot} x {item.awaySlot} · {formatDateTimeBR(item.matchDateUtc)}
+                      </p>
+                    </div>
+                    <span
+                      className={clsx(
+                        "w-fit rounded-full border px-2 py-1 text-xs font-bold",
+                        isDefined ? "border-limebet/30 bg-limebet/10 text-limebet" : "border-amber-300/25 bg-amber-300/10 text-amber-100"
+                      )}
+                    >
+                      {isDefined ? "Definido" : "A definir"}
+                    </span>
+                  </div>
+
+                  <div className="mt-3 grid gap-2 md:grid-cols-[1fr_1fr_auto] md:items-end">
+                    <TeamSelect
+                      label="Seleção 1"
+                      options={teamOptions}
+                      value={draft.homeTeam}
+                      onChange={(team) => onChange(item.matchNumber, "homeTeam", team)}
+                    />
+                    <TeamSelect
+                      label="Seleção 2"
+                      options={teamOptions}
+                      value={draft.awayTeam}
+                      onChange={(team) => onChange(item.matchNumber, "awayTeam", team)}
+                    />
+                    <button
+                      className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-limebet px-4 text-sm font-black text-ink disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={!isComplete || isSaving}
+                      type="button"
+                      onClick={() => onSave(item.matchNumber)}
+                    >
+                      <Save size={17} />
+                      {isSaving ? "Salvando..." : "Salvar"}
+                    </button>
+                  </div>
+
+                  {draft.homeTeam && draft.awayTeam && draft.homeTeam === draft.awayTeam ? (
+                    <p className="mt-2 rounded-lg border border-rose-300/25 bg-rose-500/10 px-3 py-2 text-xs font-semibold text-rose-200">
+                      Escolha duas seleções diferentes.
+                    </p>
+                  ) : null}
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TeamSelect({
+  label,
+  options,
+  value,
+  onChange
+}: {
+  label: string;
+  options: string[];
+  value: string;
+  onChange: (team: string) => void;
+}) {
+  return (
+    <label className="min-w-0">
+      <span className="mb-1 block text-xs font-bold uppercase text-steel">{label}</span>
+      <select
+        className="h-11 w-full rounded-lg border border-white/10 bg-felt px-2 text-sm text-white outline-none focus:border-limebet"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        <option value="">Seleção</option>
+        {options.map((team) => (
+          <option key={team} value={team}>
+            {team}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function knockoutSections(matches: AdminKnockoutMatch[]) {
+  const map = new Map<string, AdminKnockoutMatch[]>();
+
+  for (const match of matches) {
+    map.set(match.label, [...(map.get(match.label) ?? []), match]);
+  }
+
+  return Array.from(map.entries()).map(([title, sectionMatches]) => ({
+    title,
+    matches: sectionMatches
+  }));
 }
 
 function bonusLabel(state: AdminBonusQuestion["computedState"]) {

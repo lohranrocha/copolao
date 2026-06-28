@@ -11,6 +11,12 @@ import {
   groupStandingBonusControlKey,
   validateStandingTeams
 } from "../../utils/groupStandings.js";
+import {
+  getKnockoutLockAt,
+  getKnockoutMatchTemplate,
+  knockoutMatchTemplates
+} from "../../utils/knockout.js";
+import { getComputedMatchState } from "../../utils/matches.js";
 
 const uuidParamsSchema = z.object({
   id: z.string().uuid()
@@ -60,6 +66,15 @@ const groupStandingResultSchema = z.object({
   fourthTeam: z.string().trim().min(1).max(100)
 });
 
+const knockoutParamsSchema = z.object({
+  matchNumber: z.coerce.number().int().min(73).max(104)
+});
+
+const knockoutMatchSchema = z.object({
+  homeTeam: z.string().trim().min(1).max(100),
+  awayTeam: z.string().trim().min(1).max(100)
+});
+
 export async function adminRoutes(app: FastifyInstance) {
   app.get("/invite-codes", { preHandler: requireAdmin }, async () => {
     const inviteCodes = await prisma.inviteCode.findMany({
@@ -102,6 +117,105 @@ export async function adminRoutes(app: FastifyInstance) {
     }
 
     return { inviteCode };
+  });
+
+  app.get("/knockout-matches", { preHandler: requireAdmin }, async () => {
+    const [matches, teamOptions] = await Promise.all([
+      prisma.match.findMany({
+        where: {
+          matchNumber: {
+            gte: 73,
+            lte: 104
+          }
+        },
+        orderBy: { matchNumber: "asc" }
+      }),
+      getKnockoutTeamOptions()
+    ]);
+
+    const matchByNumber = new Map(matches.map((match) => [match.matchNumber, match]));
+
+    return {
+      teamOptions,
+      matches: knockoutMatchTemplates.map((template) => {
+        const match = matchByNumber.get(template.matchNumber);
+        return {
+          ...template,
+          match: match ? { ...match, computedState: getComputedMatchState(match) } : null
+        };
+      })
+    };
+  });
+
+  app.patch("/knockout-matches/:matchNumber", { preHandler: requireAdmin }, async (request, reply) => {
+    const { matchNumber } = knockoutParamsSchema.parse(request.params);
+    const body = knockoutMatchSchema.parse(request.body);
+    const template = getKnockoutMatchTemplate(matchNumber);
+
+    if (!template) {
+      return reply.status(404).send({ message: "Jogo de mata-mata nao encontrado." });
+    }
+
+    if (body.homeTeam === body.awayTeam) {
+      return reply.status(400).send({ message: "Selecione duas selecoes diferentes." });
+    }
+
+    const teamOptions = await getKnockoutTeamOptions();
+    if (!teamOptions.includes(body.homeTeam) || !teamOptions.includes(body.awayTeam)) {
+      return reply.status(400).send({ message: "Selecione selecoes validas da Copa." });
+    }
+
+    const existingMatch = await prisma.match.findUnique({
+      where: { matchNumber },
+      include: {
+        _count: {
+          select: { predictions: true }
+        }
+      }
+    });
+
+    if (existingMatch?.status === "FINISHED") {
+      return reply.status(400).send({ message: "Nao e possivel alterar um jogo ja finalizado." });
+    }
+
+    if (existingMatch && getComputedMatchState(existingMatch) !== "OPEN" && existingMatch._count.predictions > 0) {
+      return reply.status(400).send({ message: "Este jogo ja fechou e possui palpites. Nao altere o confronto." });
+    }
+
+    const match = await prisma.match.upsert({
+      where: { matchNumber },
+      create: {
+        matchNumber,
+        homeTeam: body.homeTeam,
+        awayTeam: body.awayTeam,
+        groupCode: null,
+        stage: template.stage,
+        venue: "A definir",
+        city: "A definir",
+        matchDateUtc: new Date(template.matchDateUtc),
+        lockAtUtc: getKnockoutLockAt(template.matchDateUtc)
+      },
+      update: {
+        homeTeam: body.homeTeam,
+        awayTeam: body.awayTeam,
+        groupCode: null,
+        stage: template.stage,
+        venue: "A definir",
+        city: "A definir",
+        matchDateUtc: new Date(template.matchDateUtc),
+        lockAtUtc: getKnockoutLockAt(template.matchDateUtc),
+        status: "SCHEDULED",
+        homeScore: null,
+        awayScore: null
+      }
+    });
+
+    return {
+      match: {
+        ...match,
+        computedState: getComputedMatchState(match)
+      }
+    };
   });
 
   app.get("/bonus-questions", { preHandler: requireAdmin }, async () => {
@@ -320,4 +434,20 @@ export async function adminRoutes(app: FastifyInstance) {
 
     return { result };
   });
+}
+
+async function getKnockoutTeamOptions() {
+  const groupMatches = await prisma.match.findMany({
+    where: {
+      stage: "GROUP_STAGE"
+    },
+    select: {
+      homeTeam: true,
+      awayTeam: true
+    }
+  });
+
+  return Array.from(new Set(groupMatches.flatMap((match) => [match.homeTeam, match.awayTeam]))).sort((a, b) =>
+    a.localeCompare(b, "pt-BR")
+  );
 }

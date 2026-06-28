@@ -196,3 +196,13 @@ export type PredictionBoardMatch = {
   viewerCanSeePredictions: boolean;
   predictions: PredictionBoardPrediction[];
 };
+
+export type AdminKnockoutMatch = {
+  matchNumber: number;
+  stage: string;
+  label: string;
+  homeSlot: string;
+  awaySlot: string;
+  matchDateUtc: string;
+  match: Match | null;
+};
