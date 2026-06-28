@@ -178,21 +178,21 @@ const fixtures: FixtureSeed[] = [
 
 const knockoutFixtures: FixtureSeed[] = [
   { matchNumber: 73, groupCode: null, homeTeam: "África do Sul", awayTeam: "Canadá", venue: "A definir", city: "A definir", matchDateUtc: "2026-06-28T19:00:00.000Z", stage: "ROUND_OF_32" },
-  { matchNumber: 74, groupCode: null, homeTeam: "Alemanha", awayTeam: "Paraguai", venue: "A definir", city: "A definir", matchDateUtc: "2026-06-29T17:00:00.000Z", stage: "ROUND_OF_32" },
-  { matchNumber: 75, groupCode: null, homeTeam: "Holanda", awayTeam: "Marrocos", venue: "A definir", city: "A definir", matchDateUtc: "2026-06-29T20:30:00.000Z", stage: "ROUND_OF_32" },
-  { matchNumber: 76, groupCode: null, homeTeam: "Brasil", awayTeam: "Japão", venue: "A definir", city: "A definir", matchDateUtc: "2026-06-30T01:00:00.000Z", stage: "ROUND_OF_32" },
-  { matchNumber: 77, groupCode: null, homeTeam: "França", awayTeam: "Suécia", venue: "A definir", city: "A definir", matchDateUtc: "2026-06-30T17:00:00.000Z", stage: "ROUND_OF_32" },
-  { matchNumber: 78, groupCode: null, homeTeam: "Costa do Marfim", awayTeam: "Noruega", venue: "A definir", city: "A definir", matchDateUtc: "2026-06-30T21:00:00.000Z", stage: "ROUND_OF_32" },
+  { matchNumber: 74, groupCode: null, homeTeam: "Alemanha", awayTeam: "Paraguai", venue: "A definir", city: "A definir", matchDateUtc: "2026-06-29T20:30:00.000Z", stage: "ROUND_OF_32" },
+  { matchNumber: 75, groupCode: null, homeTeam: "Holanda", awayTeam: "Marrocos", venue: "A definir", city: "A definir", matchDateUtc: "2026-06-30T01:00:00.000Z", stage: "ROUND_OF_32" },
+  { matchNumber: 76, groupCode: null, homeTeam: "Brasil", awayTeam: "Japão", venue: "A definir", city: "A definir", matchDateUtc: "2026-06-29T17:00:00.000Z", stage: "ROUND_OF_32" },
+  { matchNumber: 77, groupCode: null, homeTeam: "França", awayTeam: "Suécia", venue: "A definir", city: "A definir", matchDateUtc: "2026-06-30T21:00:00.000Z", stage: "ROUND_OF_32" },
+  { matchNumber: 78, groupCode: null, homeTeam: "Costa do Marfim", awayTeam: "Noruega", venue: "A definir", city: "A definir", matchDateUtc: "2026-06-30T17:00:00.000Z", stage: "ROUND_OF_32" },
   { matchNumber: 79, groupCode: null, homeTeam: "México", awayTeam: "Equador", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-01T01:00:00.000Z", stage: "ROUND_OF_32" },
   { matchNumber: 80, groupCode: null, homeTeam: "Inglaterra", awayTeam: "DR Congo", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-01T16:00:00.000Z", stage: "ROUND_OF_32" },
-  { matchNumber: 81, groupCode: null, homeTeam: "Estados Unidos", awayTeam: "Bósnia e Herzegovina", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-01T23:00:00.000Z", stage: "ROUND_OF_32" },
-  { matchNumber: 82, groupCode: null, homeTeam: "Bélgica", awayTeam: "Senegal", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-02T02:30:00.000Z", stage: "ROUND_OF_32" },
-  { matchNumber: 83, groupCode: null, homeTeam: "Portugal", awayTeam: "Croácia", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-02T19:00:00.000Z", stage: "ROUND_OF_32" },
-  { matchNumber: 84, groupCode: null, homeTeam: "Espanha", awayTeam: "Áustria", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-02T23:00:00.000Z", stage: "ROUND_OF_32" },
-  { matchNumber: 85, groupCode: null, homeTeam: "Suíça", awayTeam: "Argélia", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-03T02:00:00.000Z", stage: "ROUND_OF_32" },
-  { matchNumber: 86, groupCode: null, homeTeam: "Argentina", awayTeam: "Cabo Verde", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-03T18:00:00.000Z", stage: "ROUND_OF_32" },
-  { matchNumber: 87, groupCode: null, homeTeam: "Colômbia", awayTeam: "Gana", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-03T22:00:00.000Z", stage: "ROUND_OF_32" },
-  { matchNumber: 88, groupCode: null, homeTeam: "Austrália", awayTeam: "Egito", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-04T00:30:00.000Z", stage: "ROUND_OF_32" }
+  { matchNumber: 81, groupCode: null, homeTeam: "Estados Unidos", awayTeam: "Bósnia e Herzegovina", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-02T00:00:00.000Z", stage: "ROUND_OF_32" },
+  { matchNumber: 82, groupCode: null, homeTeam: "Bélgica", awayTeam: "Senegal", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-01T20:00:00.000Z", stage: "ROUND_OF_32" },
+  { matchNumber: 83, groupCode: null, homeTeam: "Portugal", awayTeam: "Croácia", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-02T23:00:00.000Z", stage: "ROUND_OF_32" },
+  { matchNumber: 84, groupCode: null, homeTeam: "Espanha", awayTeam: "Áustria", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-02T19:00:00.000Z", stage: "ROUND_OF_32" },
+  { matchNumber: 85, groupCode: null, homeTeam: "Suíça", awayTeam: "Argélia", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-03T03:00:00.000Z", stage: "ROUND_OF_32" },
+  { matchNumber: 86, groupCode: null, homeTeam: "Argentina", awayTeam: "Cabo Verde", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-03T22:00:00.000Z", stage: "ROUND_OF_32" },
+  { matchNumber: 87, groupCode: null, homeTeam: "Colômbia", awayTeam: "Gana", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-04T01:30:00.000Z", stage: "ROUND_OF_32" },
+  { matchNumber: 88, groupCode: null, homeTeam: "Austrália", awayTeam: "Egito", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-03T18:00:00.000Z", stage: "ROUND_OF_32" }
 ];
 
 async function main() {
