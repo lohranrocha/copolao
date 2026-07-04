@@ -14,6 +14,7 @@ import {
 import {
   getKnockoutLockAt,
   getKnockoutMatchTemplate,
+  type KnockoutMatchTemplate,
   knockoutMatchTemplates
 } from "../../utils/knockout.js";
 import { getComputedMatchState } from "../../utils/matches.js";
@@ -141,6 +142,8 @@ export async function adminRoutes(app: FastifyInstance) {
         const match = matchByNumber.get(template.matchNumber);
         return {
           ...template,
+          homeTeamOptions: getKnockoutSlotOptions(template.homeSlot, matchByNumber, teamOptions),
+          awayTeamOptions: getKnockoutSlotOptions(template.awaySlot, matchByNumber, teamOptions),
           match: match ? { ...match, computedState: getComputedMatchState(match) } : null
         };
       })
@@ -160,9 +163,23 @@ export async function adminRoutes(app: FastifyInstance) {
       return reply.status(400).send({ message: "Selecione duas selecoes diferentes." });
     }
 
-    const teamOptions = await getKnockoutTeamOptions();
-    if (!teamOptions.includes(body.homeTeam) || !teamOptions.includes(body.awayTeam)) {
-      return reply.status(400).send({ message: "Selecione selecoes validas da Copa." });
+    const [teamOptions, knockoutMatches] = await Promise.all([
+      getKnockoutTeamOptions(),
+      prisma.match.findMany({
+        where: {
+          matchNumber: {
+            gte: 73,
+            lte: 104
+          }
+        }
+      })
+    ]);
+    const matchByNumber = new Map(knockoutMatches.map((match) => [match.matchNumber, match]));
+    const homeTeamOptions = getKnockoutSlotOptions(template.homeSlot, matchByNumber, teamOptions);
+    const awayTeamOptions = getKnockoutSlotOptions(template.awaySlot, matchByNumber, teamOptions);
+
+    if (!homeTeamOptions.includes(body.homeTeam) || !awayTeamOptions.includes(body.awayTeam)) {
+      return reply.status(400).send({ message: getInvalidKnockoutSelectionMessage(template, homeTeamOptions, awayTeamOptions) });
     }
 
     const existingMatch = await prisma.match.findUnique({
@@ -450,4 +467,27 @@ async function getKnockoutTeamOptions() {
   return Array.from(new Set(groupMatches.flatMap((match) => [match.homeTeam, match.awayTeam]))).sort((a, b) =>
     a.localeCompare(b, "pt-BR")
   );
+}
+
+function getKnockoutSlotOptions(slot: string, matchByNumber: Map<number, { homeTeam: string; awayTeam: string }>, fallbackTeamOptions: string[]) {
+  const previousMatchNumber = getPreviousMatchNumber(slot);
+  if (!previousMatchNumber) return fallbackTeamOptions;
+
+  const previousMatch = matchByNumber.get(previousMatchNumber);
+  if (!previousMatch) return [];
+
+  return [previousMatch.homeTeam, previousMatch.awayTeam].sort((a, b) => a.localeCompare(b, "pt-BR"));
+}
+
+function getPreviousMatchNumber(slot: string) {
+  const match = slot.match(/(?:jogo|semifinal)\s+(\d+)/i);
+  return match ? Number(match[1]) : null;
+}
+
+function getInvalidKnockoutSelectionMessage(template: KnockoutMatchTemplate, homeTeamOptions: string[], awayTeamOptions: string[]) {
+  if (homeTeamOptions.length === 0 || awayTeamOptions.length === 0) {
+    return "Defina primeiro os confrontos da fase anterior.";
+  }
+
+  return `Selecione times válidos para ${template.homeSlot} e ${template.awaySlot}.`;
 }

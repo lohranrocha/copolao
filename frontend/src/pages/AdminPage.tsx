@@ -36,7 +36,6 @@ export function AdminPage() {
   const [bonusQuestions, setBonusQuestions] = useState<AdminBonusQuestion[]>([]);
   const [groupStandings, setGroupStandings] = useState<AdminGroupStanding[]>([]);
   const [knockoutMatches, setKnockoutMatches] = useState<AdminKnockoutMatch[]>([]);
-  const [knockoutTeamOptions, setKnockoutTeamOptions] = useState<string[]>([]);
   const [knockoutDrafts, setKnockoutDrafts] = useState<Record<number, KnockoutDraft>>({});
   const [savingKnockoutMatchNumber, setSavingKnockoutMatchNumber] = useState<number | null>(null);
   const [selectedMatchId, setSelectedMatchId] = useState("");
@@ -66,7 +65,7 @@ export function AdminPage() {
       api.get<{ inviteCodes: InviteCode[] }>("/admin/invite-codes"),
       api.get<{ questions: AdminBonusQuestion[] }>("/admin/bonus-questions"),
       api.get<{ groups: AdminGroupStanding[] }>("/admin/group-standings"),
-      api.get<{ matches: AdminKnockoutMatch[]; teamOptions: string[] }>("/admin/knockout-matches")
+      api.get<{ matches: AdminKnockoutMatch[] }>("/admin/knockout-matches")
     ]);
     setUsers(usersResponse.data.users);
     setMatches(matchesResponse.data.matches);
@@ -74,7 +73,6 @@ export function AdminPage() {
     setBonusQuestions(bonusResponse.data.questions);
     setGroupStandings(groupResponse.data.groups);
     setKnockoutMatches(knockoutResponse.data.matches);
-    setKnockoutTeamOptions(knockoutResponse.data.teamOptions);
     setKnockoutDrafts(
       Object.fromEntries(
         knockoutResponse.data.matches.map((item) => [
@@ -563,7 +561,6 @@ export function AdminPage() {
           <Panel title="Definir mata-mata" icon={Swords}>
             <KnockoutAdminPanel
               matches={knockoutMatches}
-              teamOptions={knockoutTeamOptions}
               drafts={knockoutDrafts}
               savingMatchNumber={savingKnockoutMatchNumber}
               onChange={updateKnockoutDraft}
@@ -1037,14 +1034,12 @@ function GroupResultAdminCard({
 
 function KnockoutAdminPanel({
   matches,
-  teamOptions,
   drafts,
   savingMatchNumber,
   onChange,
   onSave
 }: {
   matches: AdminKnockoutMatch[];
-  teamOptions: string[];
   drafts: Record<number, KnockoutDraft>;
   savingMatchNumber: number | null;
   onChange: (matchNumber: number, field: keyof KnockoutDraft, team: string) => void;
@@ -1064,7 +1059,16 @@ function KnockoutAdminPanel({
           <div className="space-y-2">
             {section.matches.map((item) => {
               const draft = drafts[item.matchNumber] ?? emptyKnockoutDraft;
-              const isComplete = Boolean(draft.homeTeam && draft.awayTeam && draft.homeTeam !== draft.awayTeam);
+              const homeTeamOptions = item.homeTeamOptions;
+              const awayTeamOptions = item.awayTeamOptions;
+              const isWaitingPreviousStage = item.homeTeamOptions.length === 0 || item.awayTeamOptions.length === 0;
+              const isComplete = Boolean(
+                draft.homeTeam &&
+                  draft.awayTeam &&
+                  draft.homeTeam !== draft.awayTeam &&
+                  item.homeTeamOptions.includes(draft.homeTeam) &&
+                  item.awayTeamOptions.includes(draft.awayTeam)
+              );
               const isDefined = Boolean(item.match);
               const isSaving = savingMatchNumber === item.matchNumber;
 
@@ -1095,15 +1099,17 @@ function KnockoutAdminPanel({
 
                   <div className="mt-3 grid gap-2 md:grid-cols-[1fr_1fr_auto] md:items-end">
                     <TeamSelect
-                      label="Seleção 1"
-                      options={teamOptions}
+                      label={item.homeSlot}
+                      options={homeTeamOptions}
                       value={draft.homeTeam}
+                      waitingPreviousStage={isWaitingPreviousStage && item.homeTeamOptions.length === 0}
                       onChange={(team) => onChange(item.matchNumber, "homeTeam", team)}
                     />
                     <TeamSelect
-                      label="Seleção 2"
-                      options={teamOptions}
+                      label={item.awaySlot}
+                      options={awayTeamOptions}
                       value={draft.awayTeam}
+                      waitingPreviousStage={isWaitingPreviousStage && item.awayTeamOptions.length === 0}
                       onChange={(team) => onChange(item.matchNumber, "awayTeam", team)}
                     />
                     <button
@@ -1122,6 +1128,12 @@ function KnockoutAdminPanel({
                       Escolha duas seleções diferentes.
                     </p>
                   ) : null}
+
+                  {isWaitingPreviousStage ? (
+                    <p className="mt-2 rounded-lg border border-amber-300/25 bg-amber-300/10 px-3 py-2 text-xs font-semibold text-amber-100">
+                      Defina primeiro os jogos que alimentam este confronto.
+                    </p>
+                  ) : null}
                 </article>
               );
             })}
@@ -1136,11 +1148,13 @@ function TeamSelect({
   label,
   options,
   value,
+  waitingPreviousStage,
   onChange
 }: {
   label: string;
   options: string[];
   value: string;
+  waitingPreviousStage?: boolean;
   onChange: (team: string) => void;
 }) {
   return (
@@ -1148,10 +1162,11 @@ function TeamSelect({
       <span className="mb-1 block text-xs font-bold uppercase text-steel">{label}</span>
       <select
         className="h-11 w-full rounded-lg border border-white/10 bg-felt px-2 text-sm text-white outline-none focus:border-limebet"
+        disabled={waitingPreviousStage}
         value={value}
         onChange={(event) => onChange(event.target.value)}
       >
-        <option value="">Seleção</option>
+        <option value="">{waitingPreviousStage ? "Defina a fase anterior" : "Seleção"}</option>
         {options.map((team) => (
           <option key={team} value={team}>
             {team}

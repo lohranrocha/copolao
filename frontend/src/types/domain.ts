@@ -204,5 +204,7 @@ export type AdminKnockoutMatch = {
   homeSlot: string;
   awaySlot: string;
   matchDateUtc: string;
+  homeTeamOptions: string[];
+  awayTeamOptions: string[];
   match: Match | null;
 };
