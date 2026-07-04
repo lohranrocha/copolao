@@ -12,7 +12,7 @@ type FixtureSeed = {
   venue: string;
   city: string;
   matchDateUtc: string;
-  stage?: "GROUP_STAGE" | "ROUND_OF_32";
+  stage?: "GROUP_STAGE" | "ROUND_OF_32" | "ROUND_OF_16" | "QUARTER_FINAL";
 };
 
 const teamNamesPt: Record<string, string> = {
@@ -192,7 +192,16 @@ const knockoutFixtures: FixtureSeed[] = [
   { matchNumber: 85, groupCode: null, homeTeam: "Suíça", awayTeam: "Argélia", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-03T03:00:00.000Z", stage: "ROUND_OF_32" },
   { matchNumber: 86, groupCode: null, homeTeam: "Argentina", awayTeam: "Cabo Verde", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-03T22:00:00.000Z", stage: "ROUND_OF_32" },
   { matchNumber: 87, groupCode: null, homeTeam: "Colômbia", awayTeam: "Gana", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-04T01:30:00.000Z", stage: "ROUND_OF_32" },
-  { matchNumber: 88, groupCode: null, homeTeam: "Austrália", awayTeam: "Egito", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-03T18:00:00.000Z", stage: "ROUND_OF_32" }
+  { matchNumber: 88, groupCode: null, homeTeam: "Austrália", awayTeam: "Egito", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-03T18:00:00.000Z", stage: "ROUND_OF_32" },
+  { matchNumber: 89, groupCode: null, homeTeam: "Canadá", awayTeam: "Marrocos", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-04T17:00:00.000Z", stage: "ROUND_OF_16" },
+  { matchNumber: 90, groupCode: null, homeTeam: "França", awayTeam: "Paraguai", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-04T21:00:00.000Z", stage: "ROUND_OF_16" },
+  { matchNumber: 91, groupCode: null, homeTeam: "Brasil", awayTeam: "Noruega", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-05T20:00:00.000Z", stage: "ROUND_OF_16" },
+  { matchNumber: 92, groupCode: null, homeTeam: "México", awayTeam: "Inglaterra", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-06T00:00:00.000Z", stage: "ROUND_OF_16" },
+  { matchNumber: 93, groupCode: null, homeTeam: "Portugal", awayTeam: "Espanha", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-06T19:00:00.000Z", stage: "ROUND_OF_16" },
+  { matchNumber: 94, groupCode: null, homeTeam: "Estados Unidos", awayTeam: "Bélgica", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-07T00:00:00.000Z", stage: "ROUND_OF_16" },
+  { matchNumber: 95, groupCode: null, homeTeam: "Argentina", awayTeam: "Egito", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-07T16:00:00.000Z", stage: "ROUND_OF_16" },
+  { matchNumber: 96, groupCode: null, homeTeam: "Suíça", awayTeam: "Colômbia", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-07T20:00:00.000Z", stage: "ROUND_OF_16" },
+  { matchNumber: 97, groupCode: null, homeTeam: "Marrocos", awayTeam: "França", venue: "A definir", city: "A definir", matchDateUtc: "2026-07-09T20:00:00.000Z", stage: "QUARTER_FINAL" }
 ];
 
 async function main() {
