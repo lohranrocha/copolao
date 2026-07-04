@@ -1,6 +1,24 @@
 import { FormEvent, useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { CalendarClock, Check, CheckCircle2, Copy, Gift, KeyRound, Power, RotateCcw, Save, Swords, Ticket, Trash2, UsersRound, type LucideIcon } from "lucide-react";
+import {
+  CalendarClock,
+  Check,
+  CheckCircle2,
+  Clock3,
+  Copy,
+  Gift,
+  KeyRound,
+  ListFilter,
+  Power,
+  RotateCcw,
+  Save,
+  Search,
+  Swords,
+  Ticket,
+  Trash2,
+  UsersRound,
+  type LucideIcon
+} from "lucide-react";
 import clsx from "clsx";
 import { PageHeader } from "../components/PageHeader";
 import { UserAvatar } from "../components/UserAvatar";
@@ -22,6 +40,8 @@ export function AdminPage() {
   const [knockoutDrafts, setKnockoutDrafts] = useState<Record<number, KnockoutDraft>>({});
   const [savingKnockoutMatchNumber, setSavingKnockoutMatchNumber] = useState<number | null>(null);
   const [selectedMatchId, setSelectedMatchId] = useState("");
+  const [resultFilter, setResultFilter] = useState<ResultFilter>("PENDING");
+  const [resultSearch, setResultSearch] = useState("");
   const [homeScore, setHomeScore] = useState(0);
   const [awayScore, setAwayScore] = useState(0);
   const [inviteCode, setInviteCode] = useState("");
@@ -83,7 +103,11 @@ export function AdminPage() {
         ])
       )
     );
-    setSelectedMatchId((current) => current || matchesResponse.data.matches[0]?.id || "");
+    setSelectedMatchId((current) => {
+      if (current && matchesResponse.data.matches.some((match) => match.id === current)) return current;
+      const firstPendingMatch = matchesResponse.data.matches.find((match) => !hasMatchResult(match));
+      return firstPendingMatch?.id || matchesResponse.data.matches[0]?.id || "";
+    });
   }
 
   useEffect(() => {
@@ -316,6 +340,8 @@ export function AdminPage() {
   const selectedMatchHasResult = Boolean(selectedMatch && selectedMatch.homeScore !== null && selectedMatch.awayScore !== null);
   const selectedMatchSavedNow = selectedMatch?.id === lastSavedMatchId;
   const selectedMatchCancelledNow = selectedMatch?.id === lastCancelledMatchId;
+  const resultMatches = getResultMatches(matches, resultFilter, resultSearch);
+  const resultFilterCounts = getResultFilterCounts(matches);
 
   useEffect(() => {
     if (!selectedMatch) return;
@@ -573,25 +599,17 @@ export function AdminPage() {
               {selectedMatchHasResult ? "Lançada" : "Pendente"}
             </span>
           </div>
-          <label className="mt-4 block">
-            <span className="text-sm font-medium text-white/80">Jogo</span>
-            <select
-              className={clsx(
-                "mt-1 h-12 w-full rounded-lg border bg-ink px-3 text-sm text-white outline-none focus:border-limebet",
-                selectedMatchHasResult ? "border-limebet/30" : "border-white/10"
-              )}
-              value={selectedMatchId}
-              onChange={(event) => setSelectedMatchId(event.target.value)}
-            >
-              {matches.map((match) => (
-                <option key={match.id} value={match.id}>
-                  {match.homeScore !== null && match.awayScore !== null ? "✓ " : ""}
-                  #{match.matchNumber} {match.homeTeam} x {match.awayTeam}
-                  {match.homeScore !== null && match.awayScore !== null ? ` (${match.homeScore}-${match.awayScore})` : ""}
-                </option>
-              ))}
-            </select>
-          </label>
+          <ResultMatchPicker
+            className="mt-4"
+            counts={resultFilterCounts}
+            filter={resultFilter}
+            matches={resultMatches}
+            search={resultSearch}
+            selectedMatchId={selectedMatchId}
+            onFilterChange={setResultFilter}
+            onSearchChange={setResultSearch}
+            onSelect={setSelectedMatchId}
+          />
 
           {selectedMatch ? (
             <div className="mt-3 rounded-lg border border-white/10 bg-ink px-3 py-3 text-xs text-steel">
@@ -671,6 +689,120 @@ function Panel({
   );
 }
 
+function ResultMatchPicker({
+  className,
+  counts,
+  filter,
+  matches,
+  search,
+  selectedMatchId,
+  onFilterChange,
+  onSearchChange,
+  onSelect
+}: {
+  className?: string;
+  counts: Record<ResultFilter, number>;
+  filter: ResultFilter;
+  matches: Match[];
+  search: string;
+  selectedMatchId: string;
+  onFilterChange: (filter: ResultFilter) => void;
+  onSearchChange: (search: string) => void;
+  onSelect: (matchId: string) => void;
+}) {
+  return (
+    <div className={className}>
+      <div className="mb-2 flex items-center gap-2 text-sm font-bold text-white/80">
+        <ListFilter size={16} />
+        Jogo
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {resultFilters.map((item) => (
+          <button
+            key={item.key}
+            className={clsx(
+              "inline-flex h-10 items-center justify-center gap-2 rounded-lg border px-2 text-xs font-black transition",
+              filter === item.key
+                ? "border-limebet bg-limebet text-ink"
+                : "border-white/10 bg-ink text-steel hover:border-limebet/40 hover:text-white"
+            )}
+            type="button"
+            onClick={() => onFilterChange(item.key)}
+          >
+            <span>{item.label}</span>
+            <span
+              className={clsx(
+                "rounded-full px-1.5 py-0.5 text-[10px]",
+                filter === item.key ? "bg-ink/15 text-ink" : "bg-white/10 text-white"
+              )}
+            >
+              {counts[item.key]}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      <label className="relative mt-3 block">
+        <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-steel" size={17} />
+        <input
+          className="h-11 w-full rounded-lg border border-white/10 bg-ink pl-10 pr-3 text-sm text-white outline-none transition placeholder:text-steel focus:border-limebet"
+          placeholder="Buscar seleção ou nº do jogo"
+          value={search}
+          onChange={(event) => onSearchChange(event.target.value)}
+        />
+      </label>
+
+      <div className="mt-3 max-h-[360px] space-y-2 overflow-y-auto pr-1">
+        {matches.length === 0 ? (
+          <p className="rounded-lg border border-white/10 bg-ink px-3 py-4 text-sm font-semibold text-steel">Nenhum jogo nesse filtro.</p>
+        ) : null}
+
+        {matches.map((match) => {
+          const isSelected = match.id === selectedMatchId;
+          const isLaunched = hasMatchResult(match);
+
+          return (
+            <button
+              key={match.id}
+              className={clsx(
+                "w-full rounded-lg border p-3 text-left transition",
+                isSelected
+                  ? "border-limebet bg-limebet/[0.09] shadow-glow"
+                  : isLaunched
+                    ? "border-limebet/25 bg-limebet/[0.05] hover:border-limebet/45"
+                    : "border-white/10 bg-ink hover:border-limebet/35"
+              )}
+              type="button"
+              onClick={() => onSelect(match.id)}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-black text-white">
+                    #{match.matchNumber} {match.homeTeam} x {match.awayTeam}
+                  </p>
+                  <p className="mt-1 flex items-center gap-1.5 text-[11px] font-semibold text-steel">
+                    <Clock3 size={13} />
+                    {matchCompetitionLabel(match.stage, match.groupCode)} · {formatDateTimeBR(match.matchDateUtc)}
+                  </p>
+                </div>
+                <span
+                  className={clsx(
+                    "shrink-0 rounded-full border px-2 py-1 text-[10px] font-black",
+                    isLaunched ? "border-limebet/35 bg-limebet/10 text-limebet" : "border-amber-300/25 bg-amber-300/10 text-amber-100"
+                  )}
+                >
+                  {isLaunched ? `${match.homeScore} x ${match.awayScore}` : "Pendente"}
+                </span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function Score({
   label,
   value,
@@ -707,6 +839,8 @@ type KnockoutDraft = {
   awayTeam: string;
 };
 
+type ResultFilter = "PENDING" | "TODAY" | "KNOCKOUT" | "FINISHED" | "ALL";
+
 const emptyKnockoutDraft: KnockoutDraft = {
   homeTeam: "",
   awayTeam: ""
@@ -726,8 +860,90 @@ const standingFields: Array<{ key: keyof StandingDraft; label: string }> = [
   { key: "fourthTeam", label: "4º" }
 ];
 
+const resultFilters: Array<{ key: ResultFilter; label: string }> = [
+  { key: "PENDING", label: "Pendentes" },
+  { key: "TODAY", label: "Hoje" },
+  { key: "KNOCKOUT", label: "Mata-mata" },
+  { key: "FINISHED", label: "Lançadas" },
+  { key: "ALL", label: "Todas" }
+];
+
 function blankStanding(_teams: string[]): StandingDraft {
   return { ...emptyStanding };
+}
+
+function hasMatchResult(match: Match) {
+  return match.homeScore !== null && match.awayScore !== null;
+}
+
+function getResultMatches(matches: Match[], filter: ResultFilter, search: string) {
+  const normalizedSearch = normalizeSearch(search);
+
+  return [...matches]
+    .filter((match) => {
+      const matchesSearch =
+        !normalizedSearch ||
+        normalizeSearch(`#${match.matchNumber} ${match.homeTeam} ${match.awayTeam} ${match.stage} ${match.groupCode ?? ""}`).includes(normalizedSearch);
+
+      if (!matchesSearch) return false;
+      if (filter === "ALL") return true;
+      if (filter === "PENDING") return !hasMatchResult(match);
+      if (filter === "TODAY") return isTodayInBrazil(match.matchDateUtc);
+      if (filter === "KNOCKOUT") return match.stage !== "GROUP_STAGE";
+      return hasMatchResult(match);
+    })
+    .sort((first, second) => {
+      const firstHasResult = hasMatchResult(first);
+      const secondHasResult = hasMatchResult(second);
+
+      if (filter === "ALL" && firstHasResult !== secondHasResult) return firstHasResult ? 1 : -1;
+      if (filter === "FINISHED") {
+        const byDateDesc = new Date(second.matchDateUtc).getTime() - new Date(first.matchDateUtc).getTime();
+        if (byDateDesc !== 0) return byDateDesc;
+        return second.matchNumber - first.matchNumber;
+      }
+
+      const byDate = new Date(first.matchDateUtc).getTime() - new Date(second.matchDateUtc).getTime();
+      if (byDate !== 0) return byDate;
+      return first.matchNumber - second.matchNumber;
+    });
+}
+
+function getResultFilterCounts(matches: Match[]): Record<ResultFilter, number> {
+  return {
+    PENDING: matches.filter((match) => !hasMatchResult(match)).length,
+    TODAY: matches.filter((match) => isTodayInBrazil(match.matchDateUtc)).length,
+    KNOCKOUT: matches.filter((match) => match.stage !== "GROUP_STAGE").length,
+    FINISHED: matches.filter(hasMatchResult).length,
+    ALL: matches.length
+  };
+}
+
+function normalizeSearch(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function isTodayInBrazil(date: string) {
+  return getBrazilDateKey(new Date(date)) === getBrazilDateKey(new Date());
+}
+
+function getBrazilDateKey(date: Date) {
+  const parts = new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "America/Sao_Paulo",
+    year: "numeric"
+  }).formatToParts(date);
+
+  const day = parts.find((part) => part.type === "day")?.value ?? "01";
+  const month = parts.find((part) => part.type === "month")?.value ?? "01";
+  const year = parts.find((part) => part.type === "year")?.value ?? "1970";
+
+  return `${year}-${month}-${day}`;
 }
 
 function getBonusWindowInputValue(questions: AdminBonusQuestion[], groups: AdminGroupStanding[]) {
