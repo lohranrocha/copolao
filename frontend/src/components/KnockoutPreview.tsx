@@ -70,9 +70,9 @@ const knockoutRounds: KnockoutRound[] = [
     label: "Quartas de final",
     matches: [
       knockoutMatch(97, "2026-07-09T20:00:00.000Z", "Vencedor do jogo 89", "Vencedor do jogo 90"),
-      knockoutMatch(98, "2026-07-10T00:00:00.000Z", "Vencedor do jogo 93", "Vencedor do jogo 94"),
-      knockoutMatch(99, "2026-07-10T19:00:00.000Z", "Vencedor do jogo 91", "Vencedor do jogo 92"),
-      knockoutMatch(100, "2026-07-11T00:00:00.000Z", "Vencedor do jogo 95", "Vencedor do jogo 96")
+      knockoutMatch(98, "2026-07-10T19:00:00.000Z", "Vencedor do jogo 93", "Vencedor do jogo 94"),
+      knockoutMatch(99, "2026-07-11T21:00:00.000Z", "Vencedor do jogo 91", "Vencedor do jogo 92"),
+      knockoutMatch(100, "2026-07-12T01:00:00.000Z", "Vencedor do jogo 95", "Vencedor do jogo 96")
     ]
   },
   {
