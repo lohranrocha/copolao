@@ -48,8 +48,9 @@ export function getKnockoutMatchTemplate(matchNumber: number) {
   return knockoutMatchTemplates.find((match) => match.matchNumber === matchNumber) ?? null;
 }
 
-export function getKnockoutLockAt(matchDateUtc: string) {
-  return new Date(new Date(matchDateUtc).getTime() - 30 * 60 * 1000);
+export function getKnockoutLockAt(matchDateUtc: string, stage: KnockoutMatchTemplate["stage"]) {
+  const lockMinutesBeforeKickoff = stage === "THIRD_PLACE" || stage === "FINAL" ? 15 : 30;
+  return new Date(new Date(matchDateUtc).getTime() - lockMinutesBeforeKickoff * 60 * 1000);
 }
 
 function template(

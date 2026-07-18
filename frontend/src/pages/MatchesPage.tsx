@@ -88,7 +88,7 @@ export function MatchesPage() {
               </div>
               <h1 className="text-3xl font-black uppercase tracking-wide md:text-4xl">Jogos do Copolão</h1>
               <p className="mt-2 max-w-xl text-sm leading-6 text-steel">
-                Palpite rápido no celular, fechamento 30 minutos antes do jogo e tudo no horário do Brasil.
+                Palpite rápido no celular, fechamento perto do jogo e tudo no horário do Brasil.
               </p>
             </div>
             <Countdown targetDate={firstMatchDate} />

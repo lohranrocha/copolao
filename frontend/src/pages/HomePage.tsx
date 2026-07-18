@@ -22,7 +22,7 @@ const scoringRules = [
   { title: "Ordem do grupo", value: "1 pt", text: "Cada posição correta na classificação final vale ponto." },
   { title: "Grupo perfeito", value: "+1 pt", text: "Acertou as quatro posições do mesmo grupo." },
   { title: "Bônus especiais", value: "até 20 pts", text: "Campeão, vice, artilheiro e melhor ataque." },
-  { title: "Fechamento", value: "30 min", text: "Palpites fecham antes do início de cada jogo." }
+  { title: "Fechamento", value: "30/15 min", text: "A maioria fecha 30 min antes. Final e 3º lugar fecham 15 min antes." }
 ];
 
 export function HomePage() {
@@ -110,7 +110,7 @@ export function HomePage() {
       </section>
 
       <section className="mx-auto grid max-w-6xl gap-4 px-4 py-8 md:grid-cols-3">
-        <InfoBlock icon={CalendarClock} title="Palpites até perto do jogo" text="Cada partida fecha 30 minutos antes do início." />
+        <InfoBlock icon={CalendarClock} title="Palpites até perto do jogo" text="A maioria fecha 30 minutos antes; final e 3º lugar fecham 15 minutos antes." />
         <InfoBlock icon={BadgeCheck} title="Bônus de grupo" text="Monte a ordem final de cada grupo e some pontos extras." />
         <InfoBlock icon={ShieldCheck} title="Entrada por código" text="O acesso é liberado com um código individual enviado pelo organizador." />
       </section>

@@ -125,7 +125,7 @@ export async function predictionsRoutes(app: FastifyInstance) {
 
     if (!canPredict(match)) {
       return reply.status(400).send({
-        message: "Os palpites deste jogo ja foram fechados. O limite e 30 minutos antes da partida."
+        message: "Os palpites deste jogo ja foram fechados."
       });
     }
 

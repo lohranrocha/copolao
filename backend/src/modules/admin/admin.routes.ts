@@ -210,7 +210,7 @@ export async function adminRoutes(app: FastifyInstance) {
         venue: "A definir",
         city: "A definir",
         matchDateUtc: new Date(template.matchDateUtc),
-        lockAtUtc: getKnockoutLockAt(template.matchDateUtc)
+        lockAtUtc: getKnockoutLockAt(template.matchDateUtc, template.stage)
       },
       update: {
         homeTeam: body.homeTeam,
@@ -220,7 +220,7 @@ export async function adminRoutes(app: FastifyInstance) {
         venue: "A definir",
         city: "A definir",
         matchDateUtc: new Date(template.matchDateUtc),
-        lockAtUtc: getKnockoutLockAt(template.matchDateUtc),
+        lockAtUtc: getKnockoutLockAt(template.matchDateUtc, template.stage),
         status: "SCHEDULED",
         homeScore: null,
         awayScore: null
