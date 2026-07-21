@@ -3,6 +3,7 @@ import { Medal, Trophy } from "lucide-react";
 import clsx from "clsx";
 import { PageHeader } from "../components/PageHeader";
 import { UserAvatar } from "../components/UserAvatar";
+import { FinalWinnersBanner } from "../components/FinalWinnersBanner";
 import { api } from "../api/client";
 import type { RankingEntry } from "../types/domain";
 
@@ -15,7 +16,9 @@ export function RankingPage() {
 
   return (
     <section>
-      <PageHeader title="Ranking" description="Ordenado por pontos, placares exatos, resultados certos e palpites enviados." />
+      <PageHeader title="Ranking final" description="Classificação encerrada do Copolão 2026." />
+
+      <FinalWinnersBanner ranking={ranking} compact />
 
       <div className="mb-4 grid gap-3 md:grid-cols-3">
         {ranking.slice(0, 3).map((entry) => (

@@ -12,7 +12,15 @@ export function normalizeBonusAnswer(value: string) {
 }
 
 export function isBonusAnswerCorrect(answer: string, correctAnswer: string) {
-  return normalizeBonusAnswer(answer) === normalizeBonusAnswer(correctAnswer);
+  const normalizedAnswer = normalizeBonusAnswer(answer);
+  return getAcceptedBonusAnswers(correctAnswer).some((acceptedAnswer) => normalizedAnswer === acceptedAnswer);
+}
+
+function getAcceptedBonusAnswers(correctAnswer: string) {
+  return correctAnswer
+    .split(/\s*(?:;|,|\/|\||\bou\b)\s*/i)
+    .map(normalizeBonusAnswer)
+    .filter(Boolean);
 }
 
 export function getBonusQuestionState(question: BonusQuestion, now = new Date()): BonusQuestionState {
